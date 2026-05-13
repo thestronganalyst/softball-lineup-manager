@@ -193,6 +193,7 @@ header{background:var(--navy);color:#fff;padding:0 18px;display:flex;align-items
 .slot.warn{background:#FFF8E1;border-color:#E6A817}
 .slot.drop-hover{background:#DBEAFE!important;border-style:solid}
 .slot-empty{font-size:8px;color:var(--gd)}
+.slot-label{display:none}
 .slot .chip{max-width:100%;min-width:0;font-size:9px;padding:2px 4px 2px 3px;box-shadow:none;gap:2px}
 .slot .chip .cn{font-size:8px;padding:0 2px}
 .slot .chip .cn-name{overflow:hidden;text-overflow:ellipsis;min-width:0}
@@ -287,12 +288,80 @@ header{background:var(--navy);color:#fff;padding:0 18px;display:flex;align-items
   .lscroll{overflow:visible}
   body{background:#fff;height:auto;overflow:auto}
 }
+
+@media (max-width:767px){
+  /* Let the whole page scroll naturally on phones */
+  body{height:auto;min-height:100vh;overflow-y:auto;font-size:13px}
+  header{height:auto;padding:6px 10px;flex-wrap:wrap;gap:6px}
+  .hdr-logo{padding-right:10px}
+  .hdr-logo h1{font-size:14px}
+  .hdr-context{padding-left:0;flex-wrap:wrap;gap:4px;width:100%;order:3}
+  .ctx-sel{max-width:none;flex:1;min-width:0}
+  .ctx-sep{padding:0 3px;font-size:11px}
+  .hdr-r{margin-left:auto;padding-left:0;flex-wrap:wrap;gap:4px}
+  .hdr-r .btn{padding:4px 8px;font-size:10px}
+
+  .page-nav{padding:0 10px;height:34px;overflow-x:auto;flex-wrap:nowrap}
+  .pnav-tab{padding:0 12px;font-size:11px}
+  .pnav-r{margin-left:8px;flex-shrink:0}
+  .pnav-r .btn{padding:4px 8px;font-size:10px}
+
+  .page{overflow:visible}
+  .page.active{flex:0 0 auto;display:flex;flex-direction:column}
+
+  /* Roster page: single column of cards */
+  .rp-toolbar{flex-wrap:wrap}
+  .rp-search{width:100%}
+  .rp-grid{padding:10px 10px}
+  .rp-cards{grid-template-columns:1fr;gap:8px}
+
+  /* Lineup page stacks vertically; sidebar drops to the bottom */
+  .lineup-page{flex-direction:column;overflow:visible;height:auto}
+  .gsidebar{width:100%;order:2;border-right:none;border-top:2px solid var(--gm);overflow:visible}
+  .gs-sec{flex:0 0 auto;max-height:260px;border-bottom:2px solid var(--gm)}
+  .gs-sec:last-child{border-bottom:none}
+
+  .lmain{order:1;overflow:visible}
+  .lm-top{padding:8px 10px 0}
+  .ginfo-strip{flex-wrap:wrap;gap:6px}
+  .gfield{flex:1;min-width:130px}
+  .gfield input{width:100%}
+  .vbar{padding:0 10px 4px}
+  .lineup-split{flex-direction:column;overflow:visible}
+  .lfield{overflow:visible}
+  .lscroll{overflow:visible;padding:0 10px 12px}
+
+  /* Crosstab: drop the top header, give each slot its own label */
+  .lgrid-headrow{display:none}
+  .inning-block{grid-template-columns:54px 1fr}
+  .inning-side{padding:6px 2px;gap:4px}
+  .inning-side-num{font-size:12px}
+  .inning-side .inning-auto{font-size:8px;padding:2px 5px}
+
+  .inning-pool{min-height:36px;padding:5px 6px}
+  .inning-pool .chip{font-size:11px;padding:3px 8px 3px 5px}
+
+  .inning-slots{grid-template-columns:repeat(auto-fill,minmax(95px,1fr));gap:5px;padding:5px 6px}
+  .slot{flex-direction:column;align-items:stretch;min-height:48px;padding:4px;gap:2px}
+  .slot-label{display:block;font-size:9px;font-weight:700;color:var(--gd);text-align:center;letter-spacing:.3px}
+  .slot.field .slot-label{color:var(--green2)}
+  .slot.bench .slot-label{color:var(--bench2)}
+  .slot .chip{font-size:10px;padding:3px 6px 3px 4px}
+  .slot-sep{display:none}
+
+  /* About page: tighter padding */
+  .about-content{padding:18px 16px 50px}
+  .about-title{font-size:18px}
+}
 ::-webkit-scrollbar{width:5px;height:5px}
 ::-webkit-scrollbar-thumb{background:var(--gm);border-radius:3px}
 ::-webkit-scrollbar-track{background:transparent}
 </style>
 </head>
 <body>
+<!-- Touch drag-drop polyfill: HTML5 drag/drop doesn't fire on touch devices natively. -->
+<script type="module" src="https://cdn.jsdelivr.net/npm/drag-drop-touch@1.3.1/dist/drag-drop-touch.esm.min.js"></script>
+
 
 <!-- ════════════ HEADER ════════════ -->
 <header>
@@ -1119,6 +1188,7 @@ function slotCell(pos,inn,kind){
     ondragover="dOver(event,'${pos.id}',${inn})"
     ondragleave="dLeave(event)"
     ondrop="dDrop(event,'${pos.id}',${inn})">
+    <span class="slot-label">${SHORT_POS[pos.id]}</span>
     ${pid?chip(pid,pos.id,inn):'<span class="slot-empty">—</span>'}
   </div>`;
 }
