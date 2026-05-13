@@ -102,11 +102,14 @@ header{background:var(--navy);color:#fff;padding:0 18px;display:flex;align-items
 ════════════════════════════════════════ */
 .lineup-page{display:flex;flex:1;overflow:hidden}
 
-/* game sidebar */
-.gsidebar{width:190px;background:#fff;border-right:1px solid var(--gm);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0}
-.gside-hdr{padding:9px 12px;border-bottom:1px solid var(--gm);display:flex;align-items:center;justify-content:space-between}
-.gside-hdr span{font-size:10px;font-weight:700;letter-spacing:.8px;color:var(--gd);text-transform:uppercase}
-.glist{overflow-y:auto;flex:1}
+/* game sidebar (games / present / batting) */
+.gsidebar{width:210px;background:#fff;border-right:1px solid var(--gm);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0}
+.gs-sec{display:flex;flex-direction:column;flex:1;min-height:0;border-bottom:2px solid var(--gm);overflow:hidden}
+.gs-sec:last-child{border-bottom:none}
+.gs-hdr{padding:7px 11px;border-bottom:1px solid var(--gm);display:flex;align-items:center;justify-content:space-between;background:#F7F9FF;flex-shrink:0}
+.gs-hdr-lbl{font-size:10px;font-weight:700;letter-spacing:.8px;color:var(--gd);text-transform:uppercase}
+.gs-hint{font-size:9px;font-weight:500;text-transform:none;letter-spacing:0;color:var(--gd);margin-left:4px}
+.gs-body{flex:1;overflow-y:auto;min-height:0}
 .gitem{padding:8px 12px;border-bottom:1px solid var(--gl);cursor:pointer;transition:.1s}
 .gitem:hover{background:var(--gl)}
 .gitem.active{background:#EEF3FF;border-left:3px solid var(--navy)}
@@ -125,12 +128,9 @@ header{background:var(--navy);color:#fff;padding:0 18px;display:flex;align-items
 .gfield input{border:1px solid var(--gm);border-radius:4px;padding:3px 7px;font-size:11px;width:130px}
 .gfield input:focus{outline:none;border-color:var(--navy)}
 
-/* inning tabs */
-.itabs{display:flex;gap:4px;align-items:center;flex-wrap:wrap;margin-bottom:6px}
-.itab{padding:4px 13px;border-radius:18px;border:1.5px solid var(--gm);background:#fff;cursor:pointer;font-size:11px;font-weight:600;transition:.12s}
-.itab.active{background:var(--navy);color:#fff;border-color:var(--navy)}
-.itab:hover:not(.active){background:var(--gl)}
-.auto-grp{margin-left:auto;display:flex;gap:5px}
+/* lineup grid toolbar */
+.lgrid-toolbar{display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap}
+.lgrid-toolbar .auto-all{margin-left:auto;display:flex;gap:5px}
 
 /* val bar */
 .vbar{padding:0 13px 4px;flex-shrink:0}
@@ -142,19 +142,14 @@ header{background:var(--navy);color:#fff;padding:0 18px;display:flex;align-items
 /* lineup split */
 .lineup-split{display:flex;flex:1;overflow:hidden;gap:0}
 
-/* left: roster present/batting */
-.lpanel{width:185px;background:#fff;border-right:1px solid var(--gm);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0}
-.lp-sec{padding:7px 11px;border-bottom:1px solid var(--gm);flex-shrink:0}
-.lp-lbl{font-size:9px;font-weight:700;letter-spacing:.8px;color:var(--gd);text-transform:uppercase;margin-bottom:4px}
-.lp-roster{overflow-y:auto;flex:0 0 auto;max-height:200px;border-bottom:1px solid var(--gm)}
-.lp-bat{overflow-y:auto;flex:1}
+/* present roster + batting items (in sidebar) */
 .lri{display:flex;align-items:center;gap:5px;padding:4px 11px;border-bottom:1px solid var(--gl);transition:.1s}
 .lri:hover{background:var(--gl)}
 .lri input[type=checkbox]{accent-color:var(--green);width:12px;height:12px;cursor:pointer;flex-shrink:0}
 .lri-num{font-size:9px;color:#fff;background:var(--navy);border-radius:8px;padding:1px 4px;font-weight:700;flex-shrink:0}
 .lri-num.sub{background:var(--bench)}
 .lri-name{flex:1;font-size:10px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.add-sub-row{display:flex;gap:4px;padding:5px 11px;border-bottom:1px solid var(--gm)}
+.add-sub-row{display:flex;gap:4px;padding:5px 11px;border-top:1px solid var(--gm);flex-shrink:0}
 .add-sub-row input{flex:1;border:1px solid var(--gm);border-radius:4px;padding:3px 6px;font-size:10px}
 .add-sub-row button{background:var(--green);color:#fff;border:none;border-radius:4px;padding:3px 8px;cursor:pointer;font-size:13px;font-weight:700}
 .bi{display:flex;align-items:center;gap:4px;padding:3px 11px;border-bottom:1px solid var(--gl)}
@@ -167,22 +162,41 @@ header{background:var(--navy);color:#fff;padding:0 18px;display:flex;align-items
 .lfield{flex:1;display:flex;flex-direction:column;overflow:hidden}
 .lscroll{flex:1;overflow-y:auto;padding:0 12px 12px}
 
-.pool-card{background:#fff;border-radius:7px;border:1.5px dashed var(--gm);padding:7px 9px;margin-bottom:9px}
-.phdr{font-size:9px;font-weight:700;letter-spacing:.7px;color:var(--gd);text-transform:uppercase;margin-bottom:5px}
-.pchips{display:flex;flex-wrap:wrap;gap:4px;min-height:26px;padding:2px}
-.pchips.drop-hover{background:#D1FAE5;border-radius:4px}
+/* crosstab lineup grid */
+.lgrid{display:flex;flex-direction:column;gap:6px}
+.lgrid-cols{--col-tpl:repeat(9,minmax(0,1fr)) 4px repeat(5,minmax(0,1fr))}
+.lgrid-headrow{display:grid;grid-template-columns:78px 1fr;align-items:end;padding:0 6px}
+.lgrid-headcols{display:grid;grid-template-columns:repeat(9,minmax(0,1fr)) 4px repeat(5,minmax(0,1fr));gap:3px;text-align:center;font-size:9px;font-weight:700;letter-spacing:.3px;padding-bottom:3px}
+.lgrid-headcols .hc{padding:2px 0}
+.lgrid-headcols .hc.f{color:var(--green2)}
+.lgrid-headcols .hc.b{color:var(--bench2)}
+.lgrid-headcols .hc.sep{visibility:hidden}
 
-.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
-.pcard{background:#fff;border-radius:7px;box-shadow:0 1px 4px rgba(0,0,0,.07);overflow:hidden}
-.shdr{font-size:9px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;padding:5px 9px}
-.shdr.field{background:var(--green);color:#fff}
-.shdr.bench{background:var(--bench);color:#fff}
-.prow{display:flex;align-items:center;min-height:38px;border-bottom:1px solid var(--gl)}
-.prow:last-child{border-bottom:none}
-.plbl{width:108px;padding:4px 8px;font-size:9px;font-weight:700;color:var(--navy);background:#F7F9FF;border-right:1px solid var(--gl);display:flex;align-items:center;gap:3px;flex-shrink:0}
-.plbl.blbl{background:#EBF5FF;color:var(--bench)}
-.pslot{flex:1;padding:3px 5px;min-height:38px;display:flex;align-items:center;flex-wrap:wrap;gap:3px}
-.pslot.drop-hover{background:#DBEAFE}
+.inning-block{background:#fff;border-radius:7px;box-shadow:0 1px 4px rgba(0,0,0,.06);overflow:hidden;display:grid;grid-template-columns:78px 1fr;min-width:0}
+.inning-side{background:var(--navy);color:#fff;padding:6px 4px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;text-align:center}
+.inning-side-num{font-size:13px;font-weight:700;line-height:1}
+.inning-side-lbl{font-size:8px;font-weight:600;opacity:.65;text-transform:uppercase;letter-spacing:.5px}
+.inning-side .inning-auto{background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.3);color:#fff;font-size:9px;padding:2px 7px;border-radius:3px;cursor:pointer;font-weight:600}
+.inning-side .inning-auto:hover{background:rgba(255,255,255,.32)}
+
+.inning-body{display:flex;flex-direction:column;min-width:0}
+.inning-pool{padding:4px 6px;border-bottom:1px solid var(--gl);background:#FAFBFD;display:flex;flex-wrap:wrap;gap:3px;align-items:center;min-height:30px}
+.inning-pool.drop-hover{background:#D1FAE5}
+.inning-pool-empty{font-size:9px;color:var(--gd);font-style:italic}
+
+.inning-slots{padding:4px 6px;display:grid;grid-template-columns:repeat(9,minmax(0,1fr)) 4px repeat(5,minmax(0,1fr));gap:3px;align-items:stretch}
+.slot-sep{background:var(--gm);border-radius:1px}
+.slot{min-height:32px;background:var(--gl);border:1px dashed var(--gm);border-radius:5px;padding:2px;display:flex;align-items:center;justify-content:center;overflow:hidden;min-width:0}
+.slot.field{background:#F0F8F2;border-color:#C5E1CC}
+.slot.bench{background:#EEF3FF;border-color:#BDD7F0}
+.slot.warn{background:#FFF8E1;border-color:#E6A817}
+.slot.drop-hover{background:#DBEAFE!important;border-style:solid}
+.slot-empty{font-size:8px;color:var(--gd)}
+.slot .chip{max-width:100%;min-width:0;font-size:9px;padding:2px 4px 2px 3px;box-shadow:none;gap:2px}
+.slot .chip .cn{font-size:8px;padding:0 2px}
+.slot .chip .cn-name{overflow:hidden;text-overflow:ellipsis;min-width:0}
+.slot .chip .cx{font-size:10px}
+.inning-pool .chip{font-size:10px}
 
 /* chips */
 .chip{display:inline-flex;align-items:center;gap:3px;border-radius:18px;padding:3px 7px 3px 4px;font-size:10px;font-weight:600;cursor:grab;user-select:none;box-shadow:0 1px 2px rgba(0,0,0,.18);max-width:155px;white-space:nowrap}
@@ -228,7 +242,7 @@ header{background:var(--navy);color:#fff;padding:0 18px;display:flex;align-items
 .divider{height:1px;background:var(--gm);margin:10px 0}
 
 @media print{
-  .page-nav,.gsidebar,.lpanel,.itabs,.auto-grp,.add-sub-row,.vbar,.hdr-r,.rp-toolbar{display:none!important}
+  .page-nav,.gsidebar,.lgrid-toolbar,.vbar,.hdr-r,.rp-toolbar{display:none!important}
   .lineup-page{display:block}
   .lfield{overflow:visible}
   .lscroll{overflow:visible}
@@ -293,62 +307,45 @@ header{background:var(--navy);color:#fff;padding:0 18px;display:flex;align-items
 <div class="page" id="page-lineup">
   <div class="lineup-page">
 
-    <!-- game sidebar -->
+    <!-- left sidebar: games / present / batting -->
     <div class="gsidebar">
-      <div class="gside-hdr">
-        <span>Games</span>
-        <button class="btn btn-green btn-xs" onclick="openNewGameModal()">+</button>
+      <div class="gs-sec">
+        <div class="gs-hdr">
+          <div class="gs-hdr-lbl">Games</div>
+          <button class="btn btn-green btn-xs" onclick="openNewGameModal()">+</button>
+        </div>
+        <div class="gs-body" id="gameList"></div>
       </div>
-      <div class="glist" id="gameList"></div>
+      <div class="gs-sec">
+        <div class="gs-hdr">
+          <div class="gs-hdr-lbl">Present <span class="gs-hint">✓ = playing today</span></div>
+        </div>
+        <div class="gs-body" id="lpRoster"></div>
+        <div class="add-sub-row">
+          <input type="text" id="subName" placeholder="Add sub…" onkeydown="if(event.key==='Enter')addSub()">
+          <button onclick="addSub()">+</button>
+        </div>
+      </div>
+      <div class="gs-sec">
+        <div class="gs-hdr">
+          <div class="gs-hdr-lbl">Batting Order</div>
+        </div>
+        <div class="gs-body" id="lpBat"></div>
+      </div>
     </div>
 
     <!-- lineup main -->
     <div class="lmain">
       <div class="lm-top">
         <div class="ginfo-strip" id="gameInfoStrip"></div>
-        <div class="itabs" id="inningTabs"></div>
+        <div class="lgrid-toolbar" id="lineupToolbar"></div>
       </div>
       <div class="vbar" id="valBar"></div>
 
       <div class="lineup-split">
-        <!-- left panel: present players + batting -->
-        <div class="lpanel">
-          <div class="lp-sec" style="padding-bottom:3px">
-            <div class="lp-lbl" style="margin-bottom:1px">Present <span style="font-weight:400;font-size:9px">✓ = playing today</span></div>
-          </div>
-          <div class="lp-roster" id="lpRoster"></div>
-          <div class="add-sub-row">
-            <input type="text" id="subName" placeholder="Add sub…" onkeydown="if(event.key==='Enter')addSub()">
-            <button onclick="addSub()">+</button>
-          </div>
-          <div class="lp-sec" style="padding-bottom:3px;flex-shrink:0">
-            <div class="lp-lbl" style="margin-bottom:1px">Batting Order</div>
-          </div>
-          <div class="lp-bat" id="lpBat"></div>
-        </div>
-
-        <!-- right: field -->
         <div class="lfield">
           <div class="lscroll">
-            <div class="pool-card">
-              <div class="phdr">Unassigned — drag to a slot</div>
-              <div class="pchips" id="poolChips"
-                   ondragover="dOver(event,'pool')" ondragleave="dLeave(event)" ondrop="dDrop(event,'pool')"></div>
-            </div>
-            <div class="fgrid">
-              <div>
-                <div class="pcard">
-                  <div class="shdr field">⚾ Field Positions</div>
-                  <div id="fieldSlots"></div>
-                </div>
-              </div>
-              <div>
-                <div class="pcard" style="border:1px solid #BDD7F0">
-                  <div class="shdr bench">🪑 Bench</div>
-                  <div id="benchSlots"></div>
-                </div>
-              </div>
-            </div>
+            <div class="lgrid" id="lineupGrid"></div>
           </div>
         </div>
       </div>
@@ -466,7 +463,6 @@ const SK='softball_v5';
 // ══════════════════════════════════════════════════════
 let S={seasons:[],teams:[],activeSeasonId:null,activeTeamId:null};
 let currentPage='roster';
-let currentInning=1;
 let drag=null;
 let editPid=null;
 let subN=30;
@@ -627,7 +623,7 @@ function renderAll(){
   renderRosterPage();
   renderGameList();
   renderGameInfo();
-  renderTabs();
+  renderToolbar();
   renderLpRoster();
   renderBatOrder();
   renderLineup();
@@ -749,8 +745,8 @@ function renderGameList(){
 }
 
 function switchGame(id){
-  activeGameId=id; currentInning=1;
-  renderGameList(); renderGameInfo(); renderTabs();
+  activeGameId=id;
+  renderGameList(); renderGameInfo(); renderToolbar();
   renderLpRoster(); renderBatOrder(); renderLineup(); renderVal();
 }
 
@@ -786,17 +782,16 @@ function deleteGame(){
 }
 
 // ══════════════════════════════════════════════════════
-// INNING TABS
+// LINEUP TOOLBAR
 // ══════════════════════════════════════════════════════
-function renderTabs(){
-  document.getElementById('inningTabs').innerHTML=
-    INNINGS.map(i=>`<button class="itab ${i===currentInning?'active':''}" onclick="setInning(${i})">Inning ${i}</button>`).join('')+`
-    <div class="auto-grp">
-      <button class="btn btn-green btn-sm" onclick="autoInning(currentInning)">⚡ Auto Inning ${currentInning}</button>
-      <button class="btn btn-navy btn-sm" onclick="autoAll()">⚡⚡ Auto All</button>
-    </div>`;
+function renderToolbar(){
+  const el=document.getElementById('lineupToolbar');
+  if(!el) return;
+  if(!activeGame()){el.innerHTML='';return;}
+  el.innerHTML=`<div class="auto-all">
+    <button class="btn btn-navy btn-sm" onclick="autoAll()">⚡⚡ Auto All Innings</button>
+  </div>`;
 }
-function setInning(i){currentInning=i;renderTabs();renderLineup();renderVal();}
 
 // ══════════════════════════════════════════════════════
 // LEFT PANEL (lineup page)
@@ -864,9 +859,50 @@ function moveBat(pid,dir){
 }
 
 // ══════════════════════════════════════════════════════
-// LINEUP RENDER
+// LINEUP CROSSTAB
 // ══════════════════════════════════════════════════════
-function renderLineup(){renderPool();renderField();renderBench();}
+const SHORT_POS={pitcher:'P',catcher:'C',first:'1B',second:'2B',third:'3B',short:'SS',left:'LF',center:'CF',right:'RF',bench1:'B1',bench2:'B2',bench3:'B3',bench4:'B4',bench5:'B5'};
+
+function renderLineup(){
+  const el=document.getElementById('lineupGrid');
+  if(!el) return;
+  const g=activeGame();
+  if(!g){el.innerHTML='';return;}
+
+  const headFields=FIELD_POS.map(pos=>`<div class="hc f" title="${pos.label}">${SHORT_POS[pos.id]}</div>`).join('');
+  const headBench=BENCH_POS.map(pos=>`<div class="hc b" title="${pos.label}">${SHORT_POS[pos.id]}</div>`).join('');
+  const header=`<div class="lgrid-headrow">
+    <div></div>
+    <div class="lgrid-headcols">
+      ${headFields}<div class="hc sep"></div>${headBench}
+    </div>
+  </div>`;
+
+  const blocks=INNINGS.map(inn=>{
+    const asgn=assigned(inn);
+    const unasn=g.presentPlayers.filter(id=>!asgn.has(id));
+    const poolHTML=unasn.length===0
+      ?'<span class="inning-pool-empty">All players assigned ✓</span>'
+      :unasn.map(pid=>chip(pid,'pool',inn)).join('');
+    const fieldSlots=FIELD_POS.map(pos=>slotCell(pos,inn,'field')).join('');
+    const benchSlots=BENCH_POS.map(pos=>slotCell(pos,inn,'bench')).join('');
+    return `<div class="inning-block">
+      <div class="inning-side">
+        <div class="inning-side-num">Inn ${inn}</div>
+        <button class="inning-auto" onclick="autoInning(${inn})" title="Auto-populate inning ${inn}">⚡ Auto</button>
+      </div>
+      <div class="inning-body">
+        <div class="inning-pool"
+             ondragover="dOver(event,'pool',${inn})"
+             ondragleave="dLeave(event)"
+             ondrop="dDrop(event,'pool',${inn})">${poolHTML}</div>
+        <div class="inning-slots">${fieldSlots}<div class="slot-sep"></div>${benchSlots}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  el.innerHTML=header+blocks;
+}
 
 function assigned(inn){
   const g=activeGame(); const s=new Set();
@@ -875,82 +911,64 @@ function assigned(inn){
   return s;
 }
 
-function renderPool(){
-  const g=activeGame(); const el=document.getElementById('poolChips');
-  if(!g){el.innerHTML='';return;}
-  const asgn=assigned(currentInning);
-  const unasn=g.presentPlayers.filter(id=>!asgn.has(id));
-  el.innerHTML=unasn.length===0
-    ?'<span style="font-size:10px;color:var(--gd);font-style:italic">All players assigned ✓</span>'
-    :unasn.map(pid=>chip(pid,'pool')).join('');
+function slotCell(pos,inn,kind){
+  const g=activeGame();
+  const pid=g?g.lineup[inn][pos.id]:null;
+  const warn=kind==='bench'&&pid&&benchConsec(pid,inn);
+  const cls=['slot',kind,warn?'warn':''].filter(Boolean).join(' ');
+  return `<div class="${cls}"
+    title="${pos.label}"
+    ondragover="dOver(event,'${pos.id}',${inn})"
+    ondragleave="dLeave(event)"
+    ondrop="dDrop(event,'${pos.id}',${inn})">
+    ${pid?chip(pid,pos.id,inn):'<span class="slot-empty">—</span>'}
+  </div>`;
 }
 
-function chip(pid,posId){
+function chip(pid,posId,inn){
   const p=getP(pid); if(!p) return '';
   const isBench=BENCH_POS.some(b=>b.id===posId);
-  const consec=isBench&&benchConsec(pid,currentInning);
+  const consec=isBench&&benchConsec(pid,inn);
   const cls=consec?'wc':isBench?'bc':posId==='pool'?'pc':'fc';
   const v=(p.priorities||{})[posId];
   const dotCls=posId==='pool'||!v?'px':'p'+v;
   return `<div class="chip ${cls}" draggable="true"
-    ondragstart="dStart(event,'${pid}','${posId}')"
+    ondragstart="dStart(event,'${pid}','${posId}',${inn})"
     ondragend="dEnd(event)" title="${p.name}">
     <span class="pdot ${dotCls}"></span>
     <span class="cn">#${p.jersey}</span>
-    <span>${p.name}</span>
-    ${posId!=='pool'?`<button class="cx" onclick="clearSlot('${posId}')">×</button>`:''}
+    <span class="cn-name">${p.name}</span>
+    ${posId!=='pool'?`<button class="cx" onclick="clearSlot('${posId}',${inn})">×</button>`:''}
   </div>`;
 }
 
-function renderField(){
-  const g=activeGame();
-  document.getElementById('fieldSlots').innerHTML=FIELD_POS.map(pos=>{
-    const pid=g?g.lineup[currentInning][pos.id]:null;
-    return `<div class="prow">
-      <div class="plbl">${pos.icon} ${pos.label}</div>
-      <div class="pslot" ondragover="dOver(event,'${pos.id}')" ondragleave="dLeave(event)" ondrop="dDrop(event,'${pos.id}')">
-        ${pid?chip(pid,pos.id):'<span style="font-size:9px;color:var(--gd);font-style:italic;padding-left:3px">drag here</span>'}
-      </div>
-    </div>`;
-  }).join('');
-}
-
-function renderBench(){
-  const g=activeGame();
-  document.getElementById('benchSlots').innerHTML=BENCH_POS.map(pos=>{
-    const pid=g?g.lineup[currentInning][pos.id]:null;
-    const warn=pid&&benchConsec(pid,currentInning);
-    return `<div class="prow" ${warn?'style="background:#FFF8E1"':''}>
-      <div class="plbl blbl">🪑 ${pos.label}</div>
-      <div class="pslot" ondragover="dOver(event,'${pos.id}')" ondragleave="dLeave(event)" ondrop="dDrop(event,'${pos.id}')">
-        ${pid?chip(pid,pos.id):'<span style="font-size:9px;color:var(--gd);font-style:italic;padding-left:3px">drag here</span>'}
-      </div>
-    </div>`;
-  }).join('');
-}
-
-function clearSlot(posId){
+function clearSlot(posId,inn){
   const g=activeGame(); if(!g) return;
-  g.lineup[currentInning][posId]=null; persist(); renderLineup(); renderVal();
+  g.lineup[inn][posId]=null; persist(); renderLineup(); renderVal();
 }
 
-// ── drag/drop ──
-function dStart(e,pid,from){drag={pid,from};e.dataTransfer.effectAllowed='move';setTimeout(()=>e.target.classList.add('dragging'),0);}
+// ── drag/drop (inning-scoped) ──
+function dStart(e,pid,from,inn){drag={pid,from,inn};e.dataTransfer.effectAllowed='move';setTimeout(()=>e.target.classList.add('dragging'),0);}
 function dEnd(e){e.target.classList.remove('dragging');drag=null;}
-function dOver(e,to){e.preventDefault();e.currentTarget.classList.add('drop-hover');}
+function dOver(e,to,inn){
+  e.preventDefault();
+  if(drag&&drag.inn!==inn) return;
+  e.currentTarget.classList.add('drop-hover');
+}
 function dLeave(e){e.currentTarget.classList.remove('drop-hover');}
-function dDrop(e,to){
+function dDrop(e,to,inn){
   e.preventDefault();e.currentTarget.classList.remove('drop-hover');
   if(!drag) return;
-  const{pid,from}=drag;drag=null;
+  const{pid,from,inn:fromInn}=drag;drag=null;
+  if(fromInn!==inn) return;
   const g=activeGame();if(!g) return;
   const isBench=BENCH_POS.some(b=>b.id===to);
-  if(isBench&&to!=='pool'&&benchConsec(pid,currentInning)){
+  if(isBench&&to!=='pool'&&benchConsec(pid,inn)){
     flashWarn(getP(pid)?.name+' cannot bench 2 consecutive innings!');return;
   }
-  const occ=to!=='pool'?g.lineup[currentInning][to]:null;
-  if(to!=='pool') g.lineup[currentInning][to]=pid;
-  if(from!=='pool') g.lineup[currentInning][from]=occ||null;
+  const occ=to!=='pool'?g.lineup[inn][to]:null;
+  if(to!=='pool') g.lineup[inn][to]=pid;
+  if(from!=='pool') g.lineup[inn][from]=occ||null;
   persist();renderLineup();renderVal();
 }
 
@@ -1017,8 +1035,8 @@ function renderVal(){
     if(empty.length&&asgn.size>0) msgs.push({t:'warn',inn,txt:`Inning ${inn}: Empty — ${empty.map(p=>p.label).join(', ')}`});
   });
   if(!msgs.length){el.innerHTML='<div class="vm ok">✅ All innings valid</div>';return;}
-  const mine=msgs.filter(m=>m.inn===currentInning),rest=msgs.filter(m=>m.inn!==currentInning);
-  el.innerHTML=[...mine,...rest].slice(0,4).map(m=>`<div class="vm ${m.t}">${m.t==='error'?'⛔':'⚠️'} ${m.txt}</div>`).join('');
+  msgs.sort((a,b)=>a.inn-b.inn);
+  el.innerHTML=msgs.slice(0,4).map(m=>`<div class="vm ${m.t}">${m.t==='error'?'⛔':'⚠️'} ${m.txt}</div>`).join('');
 }
 
 function flashWarn(txt){
@@ -1115,7 +1133,7 @@ function createGame(){
   g.presentPlayers=cur?[...cur.presentPlayers]:team.roster.filter(p=>!p.isSub).map(p=>p.id);
   g.battingOrder=[...g.presentPlayers];
   team.games.push(g);
-  activeGameId=g.id; currentInning=1;
+  activeGameId=g.id;
   persist(); closeModals(); renderAll();
 }
 
