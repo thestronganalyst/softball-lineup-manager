@@ -83,12 +83,12 @@ header{background:var(--navy);color:#fff;padding:0 18px;display:flex;align-items
 .pc-body{padding:10px 13px}
 .pc-prios{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
 .prio-cell{display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 3px;border-radius:5px;background:var(--gl);border:1px solid transparent;font-size:9px;text-align:center;line-height:1.2}
-.prio-cell.p1{background:#FDECEA;border-color:#F5A9A9;color:#7B241C}
+.prio-cell.p1{background:#EAF6EE;border-color:#A9DFBF;color:#1E5C30}
 .prio-cell.p2{background:#FEF9E7;border-color:#FAD7A0;color:#7D4E00}
-.prio-cell.p3{background:#EAF6EE;border-color:#A9DFBF;color:#1E5C30}
+.prio-cell.p3{background:#FDECEA;border-color:#F5A9A9;color:#7B241C}
 .prio-cell.p0{color:#aaa}
 .prio-dot{width:8px;height:8px;border-radius:50%}
-.prio-dot.p1{background:#E74C3C}.prio-dot.p2{background:#F39C12}.prio-dot.p3{background:#27AE60}.prio-dot.p0{background:#DDE1E7}
+.prio-dot.p1{background:#27AE60}.prio-dot.p2{background:#F39C12}.prio-dot.p3{background:#E74C3C}.prio-dot.p0{background:#DDE1E7}
 .prio-lbl{font-size:8px}
 .prio-val{font-weight:700;font-size:10px}
 .pc-none{color:var(--gd);font-size:11px;font-style:italic}
@@ -198,6 +198,19 @@ header{background:var(--navy);color:#fff;padding:0 18px;display:flex;align-items
 .slot .chip .cx{font-size:10px}
 .inning-pool .chip{font-size:10px}
 
+/* rules panel */
+.rules-panel{background:#fff;border-radius:7px;box-shadow:0 1px 4px rgba(0,0,0,.06);padding:9px 12px;margin-top:8px}
+.rules-hdr{font-size:10px;font-weight:700;letter-spacing:.8px;color:var(--gd);text-transform:uppercase;margin-bottom:5px;padding-bottom:5px;border-bottom:1px solid var(--gl)}
+.rule-item{display:flex;gap:9px;padding:6px 0;align-items:flex-start;border-bottom:1px solid var(--gl)}
+.rule-item:last-child{border-bottom:none;padding-bottom:0}
+.rule-icon{flex-shrink:0;width:18px;text-align:center;font-size:13px;line-height:1.2;font-weight:700}
+.rule-item.ok .rule-icon{color:var(--green2)}
+.rule-item.warn .rule-icon{color:#B8860B}
+.rule-body{flex:1;min-width:0}
+.rule-title{font-size:11px;font-weight:700;color:var(--tx)}
+.rule-desc{font-size:10px;color:var(--gd);margin-top:1px;line-height:1.35}
+.rule-detail{font-size:10px;color:var(--warn-tx);background:var(--warn-bg);border:1px solid var(--warn-bd);border-radius:4px;padding:3px 7px;margin-top:4px;line-height:1.35}
+
 /* chips */
 .chip{display:inline-flex;align-items:center;gap:3px;border-radius:18px;padding:3px 7px 3px 4px;font-size:10px;font-weight:600;cursor:grab;user-select:none;box-shadow:0 1px 2px rgba(0,0,0,.18);max-width:155px;white-space:nowrap}
 .chip:active{cursor:grabbing;opacity:.65}
@@ -210,7 +223,7 @@ header{background:var(--navy);color:#fff;padding:0 18px;display:flex;align-items
 .cx{background:none;border:none;color:rgba(255,255,255,.6);font-size:11px;cursor:pointer;padding:0;line-height:1;margin-left:1px}
 .cx:hover{color:#fff}
 .pdot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
-.pdot.p1{background:#E74C3C}.pdot.p2{background:#F39C12}.pdot.p3{background:#27AE60}.pdot.px{background:rgba(255,255,255,.3)}
+.pdot.p1{background:#27AE60}.pdot.p2{background:#F39C12}.pdot.p3{background:#E74C3C}.pdot.px{background:rgba(255,255,255,.3)}
 
 /* ── overlays / modals ── */
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:300}
@@ -230,7 +243,7 @@ header{background:var(--navy);color:#fff;padding:0 18px;display:flex;align-items
 .ppos label{flex:1;font-size:10px}
 .psel{border:1px solid var(--gm);border-radius:3px;padding:2px 4px;font-size:10px;width:82px}
 .pbadge{width:10px;height:10px;border-radius:50%;flex-shrink:0;transition:.2s}
-.pbadge.p1{background:#E74C3C}.pbadge.p2{background:#F39C12}.pbadge.p3{background:#27AE60}.pbadge.p0{background:var(--gm)}
+.pbadge.p1{background:#27AE60}.pbadge.p2{background:#F39C12}.pbadge.p3{background:#E74C3C}.pbadge.p0{background:var(--gm)}
 
 /* manage list items (seasons/teams) */
 .mli{display:flex;align-items:center;gap:8px;padding:7px 10px;border:1px solid var(--gm);border-radius:6px;margin-bottom:5px}
@@ -448,6 +461,9 @@ const BENCH_POS=[
 ];
 const ALL_POS=[...FIELD_POS,...BENCH_POS];
 const INNINGS=[1,2,3,4,5];
+const INFIELD_PC=['pitcher','catcher','first','second','third','short'];
+const AUTO_LOCK=['pitcher','catcher'];
+const INFIELD_DEADLINE=4; // every present player must play infield/P/C by this inning
 const SK='softball_v5';
 
 // ══════════════════════════════════════════════════════
@@ -763,7 +779,7 @@ function renderGameInfo(){
     <div class="gfield"><label>Opponent</label><input value="${g.opponent||''}" placeholder="vs…" onchange="updateGame('opponent',this.value)"></div>
     <div class="gfield"><label>Location</label><input value="${g.location||''}" placeholder="Field…" onchange="updateGame('location',this.value)" style="width:150px"></div>
     <div style="margin-left:auto;display:flex;gap:5px;align-items:flex-end">
-      <button class="btn btn-outline btn-sm" onclick="exportCSVGame()">📄 CSV</button>
+      <button class="btn btn-outline btn-sm" onclick="exportXLSGame()">📊 Excel</button>
       <button class="btn btn-red btn-sm" onclick="deleteGame()">🗑 Delete</button>
     </div>`;
 }
@@ -901,7 +917,7 @@ function renderLineup(){
     </div>`;
   }).join('');
 
-  el.innerHTML=header+blocks;
+  el.innerHTML=header+blocks+rulesPanelHTML(g);
 }
 
 function assigned(inn){
@@ -979,32 +995,68 @@ function score(p,posId){const v=(p.priorities||{})[posId];return v===1?100:v===2
 
 function autoInning(inn){
   const g=activeGame(); if(!g) return;
-  ALL_POS.forEach(pos=>{g.lineup[inn][pos.id]=null;});
-  const mustPlay=new Set();
-  if(inn>1) BENCH_POS.forEach(b=>{const p=g.lineup[inn-1][b.id];if(p)mustPlay.add(p);});
-  const players=g.presentPlayers.filter(id=>getP(id));
-  const rem=new Set(players);
-  const fieldSlots=[...FIELD_POS.map(p=>p.id)];
+
+  // Lock: preserve pitcher/catcher if already filled with a present player.
+  const locked={};
+  AUTO_LOCK.forEach(posId=>{
+    const pid=g.lineup[inn][posId];
+    if(pid&&g.presentPlayers.includes(pid)) locked[posId]=pid;
+  });
+  // Clear non-locked slots.
+  ALL_POS.forEach(pos=>{ if(!locked[pos.id]) g.lineup[inn][pos.id]=null; });
+
+  const lockedPids=new Set(Object.values(locked));
+  const rem=new Set(g.presentPlayers.filter(id=>getP(id)&&!lockedPids.has(id)));
+  const fieldSlots=FIELD_POS.map(p=>p.id).filter(id=>!locked[id]);
   const benchSlots=[...BENCH_POS.map(p=>p.id)];
+
+  // Tier inputs
+  const mustPlay=new Set();
+  if(inn>1) BENCH_POS.forEach(b=>{const p=g.lineup[inn-1][b.id];if(p&&rem.has(p))mustPlay.add(p);});
+  const counts=benchCounts(g,inn);
+  const minBench=counts.size?Math.min(...counts.values()):0;
+  const overBench=new Set();
+  rem.forEach(pid=>{if(!mustPlay.has(pid)&&(counts.get(pid)??0)>minBench) overBench.add(pid);});
+
+  // Track who's already played infield/P/C in some other inning in the
+  // deadline window (or is locked into one this inning, if this inning is
+  // inside the window).
+  const inDeadline=inn<=INFIELD_DEADLINE;
+  const playedInfield=new Set();
+  INNINGS.forEach(other=>{
+    if(other===inn||other>INFIELD_DEADLINE) return;
+    INFIELD_PC.forEach(posId=>{const pid=g.lineup[other][posId];if(pid) playedInfield.add(pid);});
+  });
+  if(inDeadline) Object.entries(locked).forEach(([posId,pid])=>{ if(INFIELD_PC.includes(posId)) playedInfield.add(pid); });
+
   const res={};
-  let iter=0;
-  while(fieldSlots.length>0&&rem.size>0&&iter++<200){
-    let best=-1,bPid=null,bPos=null;
-    fieldSlots.forEach(posId=>{
-      rem.forEach(pid=>{
-        const p=getP(pid);if(!p) return;
-        let s=score(p,posId);
-        if(mustPlay.has(pid)) s+=200;
-        if(s>best){best=s;bPid=pid;bPos=posId;}
+  function assignTier(tier){
+    let iter=0;
+    while(fieldSlots.length>0&&tier.size>0&&iter++<200){
+      let best=-1,bPid=null,bPos=null;
+      fieldSlots.forEach(posId=>{
+        tier.forEach(pid=>{
+          const p=getP(pid);if(!p) return;
+          let s=score(p,posId);
+          if(inDeadline&&INFIELD_PC.includes(posId)&&!playedInfield.has(pid)) s+=40;
+          if(s>best){best=s;bPid=pid;bPos=posId;}
+        });
       });
-    });
-    if(!bPid) break;
-    res[bPos]=bPid;
-    fieldSlots.splice(fieldSlots.indexOf(bPos),1);
-    rem.delete(bPid);
+      if(!bPid) break;
+      res[bPos]=bPid;
+      fieldSlots.splice(fieldSlots.indexOf(bPos),1);
+      tier.delete(bPid); rem.delete(bPid);
+      if(inDeadline&&INFIELD_PC.includes(bPos)) playedInfield.add(bPid);
+    }
   }
+  // Tier order: mustPlay → overBench → everyone else.
+  assignTier(new Set([...mustPlay].filter(pid=>rem.has(pid))));
+  assignTier(new Set([...overBench].filter(pid=>rem.has(pid))));
+  assignTier(new Set(rem));
+
+  // Bench overflow
   let bi=0;
-  rem.forEach(pid=>{if(bi<benchSlots.length)res[benchSlots[bi++]]=pid;});
+  rem.forEach(pid=>{if(bi<benchSlots.length) res[benchSlots[bi++]]=pid;});
   Object.entries(res).forEach(([pos,pid])=>{g.lineup[inn][pos]=pid;});
   persist();renderLineup();renderVal();
 }
@@ -1017,6 +1069,104 @@ function benchConsec(pid,inn){
   if(inn<=1) return false;
   const g=activeGame();if(!g) return false;
   return BENCH_POS.some(b=>g.lineup[inn-1][b.id]===pid);
+}
+
+function benchCounts(g,excludeInn=null){
+  const counts=new Map();
+  g.presentPlayers.forEach(pid=>counts.set(pid,0));
+  INNINGS.forEach(inn=>{
+    if(inn===excludeInn) return;
+    BENCH_POS.forEach(b=>{
+      const pid=g.lineup[inn][b.id];
+      if(pid&&counts.has(pid)) counts.set(pid,counts.get(pid)+1);
+    });
+  });
+  return counts;
+}
+
+function evaluateRules(g){
+  // Rule 1: no consecutive bench
+  const r1=[];
+  INNINGS.forEach(inn=>{
+    BENCH_POS.forEach(b=>{
+      const pid=g.lineup[inn][b.id];
+      if(pid&&benchConsec(pid,inn)){
+        const p=getP(pid);
+        if(p) r1.push(`${p.name} (Inn ${inn-1}→${inn})`);
+      }
+    });
+  });
+
+  // Rule 2: fair bench distribution
+  const counts=benchCounts(g);
+  const vals=Array.from(counts.values());
+  const minB=vals.length?Math.min(...vals):0;
+  const maxB=vals.length?Math.max(...vals):0;
+  const uneven=maxB-minB>1;
+  let r2Detail='';
+  if(uneven){
+    const ahead=[],behind=[];
+    counts.forEach((c,pid)=>{
+      const p=getP(pid);if(!p) return;
+      if(c>=minB+2) ahead.push(`${p.name} (${c})`);
+      if(c===minB) behind.push(p.name);
+    });
+    r2Detail=`Benched ${maxB}× while ${behind.slice(0,3).join(', ')}${behind.length>3?`, +${behind.length-3} more`:''} have benched ${minB}×: ${ahead.join(', ')}`;
+  }
+
+  // Rule 5: every present player gets an infield/P/C inning in the first 3.
+  // Only flag players who have been assigned somewhere in those innings —
+  // empty lineups are handled by the "not assigned" errors instead.
+  const playedInfield=new Set(),playedAnywhereEarly=new Set();
+  INNINGS.forEach(inn=>{
+    if(inn>INFIELD_DEADLINE) return;
+    ALL_POS.forEach(pos=>{
+      const pid=g.lineup[inn][pos.id]; if(!pid) return;
+      playedAnywhereEarly.add(pid);
+      if(INFIELD_PC.includes(pos.id)) playedInfield.add(pid);
+    });
+  });
+  const r5Missing=g.presentPlayers
+    .filter(pid=>playedAnywhereEarly.has(pid)&&!playedInfield.has(pid))
+    .map(pid=>getP(pid)?.name).filter(Boolean);
+
+  return [
+    {title:'No consecutive bench',
+     desc:'A player cannot be on the bench two innings in a row. Enforced when dragging onto a bench slot.',
+     ok:r1.length===0,
+     detail:r1.length?r1.join('; '):''},
+    {title:'Fair bench distribution',
+     desc:'Everyone should bench once before anyone benches twice. Auto-populate biases toward players who have benched fewer times.',
+     ok:!uneven,
+     detail:r2Detail},
+    {title:'Position priorities considered',
+     desc:'Auto-populate ranks each player–position pairing by their stored priority: 1 = best fit (100), 2 = capable (60), 3 = can play (30), no priority = 5. Higher scores win the slot.',
+     ok:true,
+     detail:''},
+    {title:'Pitcher & catcher locked',
+     desc:'Auto-populate preserves Pitcher and Catcher when they already have a player assigned — only the other positions are reshuffled.',
+     ok:true,
+     detail:''},
+    {title:`Infield, pitcher, or catcher in the first ${INFIELD_DEADLINE} innings`,
+     desc:`Every present player must be in pitcher, catcher, 1B, 2B, 3B, or shortstop in at least one of innings 1–${INFIELD_DEADLINE}. Auto-populate boosts placing players who haven\'t had an early infield inning yet.`,
+     ok:r5Missing.length===0,
+     detail:r5Missing.length?`No early infield/P/C inning: ${r5Missing.join(', ')}`:''},
+  ];
+}
+
+function rulesPanelHTML(g){
+  const rules=evaluateRules(g);
+  return `<div class="rules-panel">
+    <div class="rules-hdr">Rules Applied</div>
+    ${rules.map(r=>`<div class="rule-item ${r.ok?'ok':'warn'}">
+      <div class="rule-icon">${r.ok?'✓':'⚠'}</div>
+      <div class="rule-body">
+        <div class="rule-title">${r.title}</div>
+        <div class="rule-desc">${r.desc}</div>
+        ${r.detail?`<div class="rule-detail">${r.detail}</div>`:''}
+      </div>
+    </div>`).join('')}
+  </div>`;
 }
 
 function renderVal(){
@@ -1034,6 +1184,18 @@ function renderVal(){
     const empty=FIELD_POS.filter(pos=>!g.lineup[inn][pos.id]);
     if(empty.length&&asgn.size>0) msgs.push({t:'warn',inn,txt:`Inning ${inn}: Empty — ${empty.map(p=>p.label).join(', ')}`});
   });
+  const counts=benchCounts(g);
+  const vals=Array.from(counts.values());
+  if(vals.length){
+    const minB=Math.min(...vals),maxB=Math.max(...vals);
+    if(maxB-minB>1){
+      msgs.push({t:'warn',inn:0,txt:`Bench imbalance: someone has benched ${maxB}× while others have benched ${minB}×`});
+    }
+  }
+  const ifSet=new Set(),anywhereEarly=new Set();
+  INNINGS.forEach(inn=>{if(inn>INFIELD_DEADLINE)return;ALL_POS.forEach(pos=>{const pid=g.lineup[inn][pos.id];if(!pid)return;anywhereEarly.add(pid);if(INFIELD_PC.includes(pos.id))ifSet.add(pid);});});
+  const missing=g.presentPlayers.filter(pid=>anywhereEarly.has(pid)&&!ifSet.has(pid)).map(pid=>getP(pid)?.name).filter(Boolean);
+  if(missing.length) msgs.push({t:'warn',inn:0,txt:`No early infield/P/C inning (by inn ${INFIELD_DEADLINE}): ${missing.join(', ')}`});
   if(!msgs.length){el.innerHTML='<div class="vm ok">✅ All innings valid</div>';return;}
   msgs.sort((a,b)=>a.inn-b.inn);
   el.innerHTML=msgs.slice(0,4).map(m=>`<div class="vm ${m.t}">${m.t==='error'?'⛔':'⚠️'} ${m.txt}</div>`).join('');
@@ -1243,19 +1405,55 @@ function handleImport(e){
   r.readAsText(f);e.target.value='';
 }
 
-function exportCSVGame(){
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+
+function exportXLSGame(){
   const g=activeGame();const team=activeTeam();if(!g) return;
-  let csv=`Lineup — ${g.name}${g.opponent?' vs '+g.opponent:''} — ${g.date||'TBD'} — ${team?.name||''}\n\nBatting Order\n`;
-  g.battingOrder.filter(id=>g.presentPlayers.includes(id)).forEach((pid,i)=>{
-    const p=getP(pid);csv+=`${i+1},${p?.name||''},#${p?.jersey||''}\n`;
-  });
-  csv+='\nInning Assignments\nPosition,'+INNINGS.map(i=>'Inning '+i).join(',')+'\n';
-  ALL_POS.forEach(pos=>{
-    const row=[pos.label];
-    INNINGS.forEach(i=>{const pid=g.lineup[i][pos.id];row.push(pid?getP(pid)?.name||'':'');});
-    csv+=row.join(',')+'\n';
-  });
-  dl(csv,'text/csv',`Lineup_${(g.name||'game').replace(/\s+/g,'_')}.csv`);
+  const title=`Lineup — ${g.name}${g.opponent?' vs '+g.opponent:''} — ${g.date||'TBD'} — ${team?.name||''}`;
+
+  const posHeader=ALL_POS.map(p=>`<th class="${BENCH_POS.some(b=>b.id===p.id)?'bench':'field'}">${esc(p.label)}</th>`).join('');
+  const inningRows=INNINGS.map(inn=>{
+    const cells=ALL_POS.map(pos=>{
+      const pid=g.lineup[inn][pos.id];
+      const name=pid?(getP(pid)?.name||''):'';
+      const cls=BENCH_POS.some(b=>b.id===pos.id)?'bench':'field';
+      return `<td class="${cls}">${esc(name)}</td>`;
+    }).join('');
+    return `<tr><th class="inn-label">Inning ${inn}</th>${cells}</tr>`;
+  }).join('');
+
+  const batting=g.battingOrder.filter(id=>g.presentPlayers.includes(id))
+    .map((pid,i)=>{const p=getP(pid);return `<tr><td>${i+1}</td><td>${esc(p?.name||'')}</td><td>#${esc(p?.jersey||'')}</td></tr>`;}).join('');
+
+  const html=`<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel">
+<head><meta charset="utf-8"><style>
+body{font-family:Calibri,Arial,sans-serif;font-size:11pt}
+table{border-collapse:collapse;margin-bottom:18pt}
+th,td{border:1px solid #999;padding:5px 9px;text-align:left;white-space:nowrap}
+th{background:#1B3A6B;color:#fff;font-weight:bold}
+th.field{background:#2D7D46}
+th.bench{background:#4472C4}
+th.inn-label{background:#162F58}
+td.field{background:#F0F8F2}
+td.bench{background:#EEF3FF}
+.title{font-size:14pt;font-weight:bold;margin:6pt 0}
+.section{font-size:12pt;font-weight:bold;margin:14pt 0 4pt}
+</style></head>
+<body>
+<div class="title">${esc(title)}</div>
+<div class="section">Inning Assignments</div>
+<table>
+<tr><th></th>${posHeader}</tr>
+${inningRows}
+</table>
+<div class="section">Batting Order</div>
+<table>
+<tr><th>#</th><th>Player</th><th>Jersey</th></tr>
+${batting||'<tr><td colspan="3">No batting order set</td></tr>'}
+</table>
+</body></html>`;
+
+  dl(html,'application/vnd.ms-excel',`Lineup_${(g.name||'game').replace(/\s+/g,'_')}.xls`);
 }
 
 // ══════════════════════════════════════════════════════
