@@ -215,6 +215,28 @@ header{background:var(--navy);color:#fff;padding:0 18px;display:flex;align-items
 .rule-desc{font-size:10px;color:var(--gd);margin-top:1px;line-height:1.35}
 .rule-detail{font-size:10px;color:var(--warn-tx);background:var(--warn-bg);border:1px solid var(--warn-bd);border-radius:4px;padding:3px 7px;margin-top:4px;line-height:1.35}
 
+/* ════════════ ABOUT PAGE ════════════ */
+.about-page{flex:1;overflow-y:auto;background:#fff}
+.about-content{max-width:820px;margin:0 auto;padding:26px 32px 60px}
+.about-title{font-size:22px;font-weight:700;color:var(--navy);margin-bottom:4px}
+.about-intro{font-size:13px;color:var(--txm);margin-bottom:18px;line-height:1.55}
+.about-content h2{font-size:11px;font-weight:700;color:var(--navy);margin-top:26px;margin-bottom:9px;padding-bottom:5px;border-bottom:2px solid var(--gl);text-transform:uppercase;letter-spacing:.6px}
+.about-content h3{font-size:13px;font-weight:700;color:var(--tx);margin-top:14px;margin-bottom:3px}
+.about-content p{font-size:12px;line-height:1.55;color:var(--tx);margin-bottom:8px}
+.about-content ul{font-size:12px;line-height:1.6;color:var(--tx);margin:3px 0 8px 20px}
+.about-content li{margin-bottom:2px}
+.about-content code{background:var(--gl);padding:1px 5px;border-radius:3px;font-size:11px;font-family:Consolas,Menlo,monospace}
+.about-content strong{font-weight:700;color:var(--tx)}
+.about-chip{display:inline-block;padding:1px 7px;border-radius:9px;font-size:11px;font-weight:600;vertical-align:baseline}
+.about-chip.best{background:#EAF6EE;color:#1E5C30;border:1px solid #A9DFBF}
+.about-chip.good{background:#FEF9E7;color:#7D4E00;border:1px solid #FAD7A0}
+.about-chip.can{background:#FDECEA;color:#7B241C;border:1px solid #F5A9A9}
+.about-rule{display:flex;gap:10px;align-items:flex-start;margin-bottom:9px}
+.about-rule-num{flex-shrink:0;width:22px;height:22px;border-radius:50%;background:var(--navy);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;margin-top:1px}
+.about-rule-body{flex:1}
+.about-rule-title{font-size:12px;font-weight:700;color:var(--tx)}
+.about-rule-desc{font-size:11px;color:var(--txm);line-height:1.5;margin-top:1px}
+
 /* chips */
 .chip{display:inline-flex;align-items:center;gap:3px;border-radius:18px;padding:3px 7px 3px 4px;font-size:10px;font-weight:600;cursor:grab;user-select:none;box-shadow:0 1px 2px rgba(0,0,0,.18);max-width:155px;white-space:nowrap}
 .chip:active{cursor:grabbing;opacity:.65}
@@ -297,6 +319,7 @@ header{background:var(--navy);color:#fff;padding:0 18px;display:flex;align-items
 <div class="page-nav">
   <div class="pnav-tab active" data-page="roster" onclick="setPage('roster')">👥 Roster</div>
   <div class="pnav-tab" data-page="lineup" onclick="setPage('lineup')">📋 Lineup</div>
+  <div class="pnav-tab" data-page="about" onclick="setPage('about')">📖 About</div>
   <div class="pnav-r">
     <button class="btn btn-ghost btn-sm" onclick="openSeasonModal()">⚙ Manage Seasons</button>
     <button class="btn btn-ghost btn-sm" onclick="openTeamModal()">⚙ Manage Teams</button>
@@ -366,6 +389,137 @@ header{background:var(--navy);color:#fff;padding:0 18px;display:flex;align-items
           </div>
         </div>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════ ABOUT PAGE ════════════ -->
+<div class="page" id="page-about">
+  <div class="about-page">
+    <div class="about-content">
+
+      <div class="about-title">Softball Lineup Manager</div>
+      <p class="about-intro">Plan inning-by-inning lineups for a youth softball team. Track your roster, set position priorities, build batting orders, and let the app suggest a fair, rule-respecting field for every inning. Data syncs across all your signed-in devices.</p>
+
+      <h2>Getting Started — Seasons &amp; Teams</h2>
+      <p>The app organizes everything by Season → Team → Game. Use the dropdowns at the top of every page to switch between active Season and Team. The <strong>Manage Seasons</strong> and <strong>Manage Teams</strong> buttons (top-right of the nav) let you create, rename, or delete them.</p>
+      <ul>
+        <li>A <strong>Season</strong> is a container (e.g. "Spring 2025"). Multiple teams can live in one season.</li>
+        <li>A <strong>Team</strong> has its own roster and its own list of games.</li>
+        <li>Switching season/team in the header changes what shows up on every page below.</li>
+      </ul>
+
+      <h2>Roster Page</h2>
+      <p>The Roster page lists every player on the active team as a card with their info and position priorities.</p>
+      <h3>Adding and editing players</h3>
+      <ul>
+        <li>Click <strong>+ Add Player</strong> in the toolbar (or the dashed card at the end of the grid) to add someone new. Name is required; jersey and primary position are optional.</li>
+        <li>The <strong>✏️ Edit</strong> button on each card opens the same form for name, jersey, primary position, and full priority grid.</li>
+        <li>Use the search box at the top to filter by name, jersey, or primary position.</li>
+        <li><strong>Export CSV</strong> downloads the full roster as a spreadsheet.</li>
+      </ul>
+
+      <h3>Position priorities</h3>
+      <p>Each card shows nine field positions. The color and label tell you how well a player fits each one:</p>
+      <ul>
+        <li><span class="about-chip best">Best</span> — top fit for that position (priority 1).</li>
+        <li><span class="about-chip good">Good</span> — capable backup (priority 2).</li>
+        <li><span class="about-chip can">Can</span> — can play if needed (priority 3).</li>
+        <li><strong>—</strong> — no priority set; auto-populate will only put them there as a last resort.</li>
+      </ul>
+      <p><strong>Click any position cell</strong> to cycle through: nothing → Best → Good → Can → nothing. Changes save immediately.</p>
+
+      <h2>Lineup Page</h2>
+      <p>This is where you build the lineup for a specific game. The page splits into a left sidebar (Games, Present, Batting Order) and a main crosstab grid (positions × innings).</p>
+
+      <h3>Left sidebar</h3>
+      <ul>
+        <li><strong>Games</strong> — every game for this team. Click one to switch; the grid updates. The <strong>+</strong> button creates a new game (carrying over the present-players list and batting order from the currently-selected game).</li>
+        <li><strong>Present</strong> — checkbox for every player on the roster. Check = playing today, uncheck = sitting out. The <strong>Add sub…</strong> input adds a temporary player marked as a Sub, visible only in this game.</li>
+        <li><strong>Batting Order</strong> — numbered list of present players. Use the <strong>▲ ▼</strong> arrows to reorder.</li>
+        <li>Each section scrolls independently, so a long games list won't crowd Present or Batting.</li>
+      </ul>
+
+      <h3>Game info strip (top of the main panel)</h3>
+      <ul>
+        <li>Edit the game's name, date, opponent, and location inline.</li>
+        <li><strong>📊 Excel</strong> downloads a spreadsheet of the lineup (positions across the top, innings down the side, batting order below).</li>
+        <li><strong>🗑 Delete</strong> removes the game.</li>
+      </ul>
+
+      <h3>The crosstab grid</h3>
+      <p>The grid has columns for each position — 9 field slots (<code>P · C · 1B · 2B · 3B · SS · LF · CF · RF</code>) and 5 bench slots (<code>B1 – B5</code>) — and one row per inning. Each inning row contains:</p>
+      <ul>
+        <li>A navy strip on the left with the inning number and a per-inning <strong>⚡ Auto</strong> button.</li>
+        <li>A <strong>Pool</strong> row above the slots, showing players who haven't been assigned anywhere yet in that inning.</li>
+        <li>The actual slot row — 14 drop targets aligned to the column headers.</li>
+      </ul>
+      <p><strong>To assign a player:</strong> drag a chip from the pool into a slot, or drag from one slot to another. The chip's colored dot shows their priority for that position. Each chip has a <strong>×</strong> button to clear the slot. Drag is scoped to a single inning — you can't drop across inning rows.</p>
+
+      <h3>Auto-populate</h3>
+      <ul>
+        <li><strong>⚡⚡ Auto All Innings</strong> (top toolbar) fills every inning at once based on the active rules.</li>
+        <li><strong>⚡ Auto</strong> on a specific inning refills just that one.</li>
+        <li>Auto-populate respects whichever rules are checked in the Rules panel — disable them to change the algorithm's behavior.</li>
+      </ul>
+
+      <h2>Rules Applied</h2>
+      <p>The Rules Applied panel sits below the inning grid. Each rule has a checkbox — uncheck to turn it off. A disabled rule stops affecting auto-populate, drag-drop enforcement, and validation messages. Rule states sync to the cloud, so toggling on one device propagates to others on next refresh.</p>
+
+      <div class="about-rule">
+        <div class="about-rule-num">1</div>
+        <div class="about-rule-body">
+          <div class="about-rule-title">No consecutive bench</div>
+          <div class="about-rule-desc">A player can't be on the bench two innings in a row. Enforced when you drop a chip onto a bench slot; the drop is rejected with a brief warning.</div>
+        </div>
+      </div>
+      <div class="about-rule">
+        <div class="about-rule-num">2</div>
+        <div class="about-rule-body">
+          <div class="about-rule-title">Fair bench distribution</div>
+          <div class="about-rule-desc">Everyone should bench once before anyone benches twice. Auto-populate gives players with fewer prior benches a stronger preference for the field; if the rule is broken, a "Bench imbalance" message appears in the validation bar.</div>
+        </div>
+      </div>
+      <div class="about-rule">
+        <div class="about-rule-num">3</div>
+        <div class="about-rule-body">
+          <div class="about-rule-title">Position priorities considered</div>
+          <div class="about-rule-desc">Auto-populate scores every player–position pairing by the priority you set on the Roster page: <strong>1 = 100</strong>, <strong>2 = 60</strong>, <strong>3 = 30</strong>, no priority = 5. Higher scores win the slot.</div>
+        </div>
+      </div>
+      <div class="about-rule">
+        <div class="about-rule-num">4</div>
+        <div class="about-rule-body">
+          <div class="about-rule-title">Pitcher &amp; catcher locked</div>
+          <div class="about-rule-desc">If pitcher or catcher already has a present player assigned in an inning, auto-populate leaves them alone and reshuffles only the other positions.</div>
+        </div>
+      </div>
+      <div class="about-rule">
+        <div class="about-rule-num">5</div>
+        <div class="about-rule-body">
+          <div class="about-rule-title">Infield, pitcher, or catcher in the first 4 innings</div>
+          <div class="about-rule-desc">Every present player must end up in pitcher, catcher, 1B, 2B, 3B, or shortstop in at least one of the first four innings. Auto-populate boosts placing players who haven't had an early infield slot yet.</div>
+        </div>
+      </div>
+
+      <h2>Validation Bar</h2>
+      <p>The yellow strip above the inning grid lists the most pressing issues to fix:</p>
+      <ul>
+        <li>Players who are checked-in present but not assigned anywhere in a given inning.</li>
+        <li>Empty field positions when some players have already been placed.</li>
+        <li>Active rule violations: consecutive bench, bench imbalance, missing early infield.</li>
+      </ul>
+      <p>The Rules Applied panel below the grid is the long-form view; the validation bar at the top is the quick-glance "what needs fixing right now."</p>
+
+      <h2>Data, Sync, and Export</h2>
+      <ul>
+        <li>All your data is stored in a single JSON file in Cloudflare R2, gated by Cloudflare Access (email allowlist). Edits sync across every signed-in device.</li>
+        <li>The colored dot in the top-right header shows save status: <strong style="color:#27AE60">●</strong> saved, <strong style="color:#D4A017">●</strong> saving, <strong style="color:#C0392B">●</strong> error, <strong style="color:#888">●</strong> offline.</li>
+        <li><strong>⬇ Export JSON</strong> downloads your entire dataset (seasons, teams, rosters, games, rules) as a backup.</li>
+        <li><strong>⬆ Import</strong> restores from a JSON file, replacing whatever is currently in the cloud.</li>
+        <li><strong>🖨 Print</strong> formats just the active lineup grid for printing — sidebars and toolbars are hidden.</li>
+      </ul>
+
     </div>
   </div>
 </div>
