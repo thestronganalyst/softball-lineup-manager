@@ -490,8 +490,8 @@ header{background:var(--navy);color:#fff;padding:0 18px;display:flex;align-items
       <div class="about-rule">
         <div class="about-rule-num">4</div>
         <div class="about-rule-body">
-          <div class="about-rule-title">Pitcher &amp; catcher locked</div>
-          <div class="about-rule-desc">If pitcher or catcher already has a present player assigned in an inning, auto-populate leaves them alone and reshuffles only the other positions.</div>
+          <div class="about-rule-title">Only fill empty slots</div>
+          <div class="about-rule-desc">Auto-populate leaves every already-filled position alone — field, bench, pitcher, catcher — and only assigns players to slots that are currently empty. To rebuild an inning from scratch, clear chips with their <strong>×</strong> button first, or turn this rule off.</div>
         </div>
       </div>
       <div class="about-rule">
@@ -620,7 +620,6 @@ const BENCH_POS=[
 const ALL_POS=[...FIELD_POS,...BENCH_POS];
 const INNINGS=[1,2,3,4,5];
 const INFIELD_PC=['pitcher','catcher','first','second','third','short'];
-const AUTO_LOCK=['pitcher','catcher'];
 const INFIELD_DEADLINE=4; // every present player must play infield/P/C by this inning
 const SK='softball_v5';
 
@@ -1182,12 +1181,12 @@ function score(p,posId){
 function autoInning(inn){
   const g=activeGame(); if(!g) return;
 
-  // Rule 4: preserve pitcher/catcher if already filled (gated by pcLock rule).
+  // Rule 4: preserve any already-filled slot (gated by pcLock rule).
   const locked={};
   if(ruleOn('pcLock')){
-    AUTO_LOCK.forEach(posId=>{
-      const pid=g.lineup[inn][posId];
-      if(pid&&g.presentPlayers.includes(pid)) locked[posId]=pid;
+    ALL_POS.forEach(pos=>{
+      const pid=g.lineup[inn][pos.id];
+      if(pid&&g.presentPlayers.includes(pid)) locked[pos.id]=pid;
     });
   }
   ALL_POS.forEach(pos=>{ if(!locked[pos.id]) g.lineup[inn][pos.id]=null; });
@@ -1195,7 +1194,7 @@ function autoInning(inn){
   const lockedPids=new Set(Object.values(locked));
   const rem=new Set(g.presentPlayers.filter(id=>getP(id)&&!lockedPids.has(id)));
   const fieldSlots=FIELD_POS.map(p=>p.id).filter(id=>!locked[id]);
-  const benchSlots=[...BENCH_POS.map(p=>p.id)];
+  const benchSlots=BENCH_POS.map(p=>p.id).filter(id=>!locked[id]);
 
   // Rule 1 (consecBench): players benched last inning must play this one.
   const mustPlay=new Set();
@@ -1336,8 +1335,8 @@ function evaluateRules(g){
      ok:true,
      detail:''},
     {id:'pcLock',
-     title:'Pitcher & catcher locked',
-     desc:'Auto-populate preserves Pitcher and Catcher when they already have a player assigned — only the other positions are reshuffled.',
+     title:'Only fill empty slots',
+     desc:'Auto-populate leaves every already-filled position alone — field, bench, pitcher, catcher — and only assigns players to slots that are currently empty.',
      ok:true,
      detail:''},
     {id:'infieldByDeadline',
