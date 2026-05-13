@@ -1,1 +1,1168 @@
-test
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Softball Lineup Manager</title>
+<style>
+:root{
+  --navy:#1B3A6B;--navy2:#253F78;--navy3:#162F58;
+  --green:#2D7D46;--green2:#1E5C30;
+  --gold:#D4A017;--gold2:#B8860B;
+  --bench:#4472C4;--bench2:#2a56a8;
+  --red:#C0392B;--red2:#922B21;
+  --warn-bg:#FFF3CD;--warn-bd:#E6A817;--warn-tx:#7D4B00;
+  --err-bg:#FDECEA;--err-bd:#C0392B;--err-tx:#922B21;
+  --ok-bg:#EAF6EE;--ok-bd:#2D7D46;--ok-tx:#1A5C2A;
+  --gl:#F4F5F7;--gm:#DDE1E7;--gd:#6B7280;
+  --tx:#1A202C;--txm:#4A5568;
+  --surf:#FFFFFF;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#EEF2F7;color:var(--tx);font-size:13px;height:100vh;display:flex;flex-direction:column;overflow:hidden}
+
+/* ── header ── */
+header{background:var(--navy);color:#fff;padding:0 18px;display:flex;align-items:center;gap:0;flex-shrink:0;height:48px;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.hdr-logo{display:flex;align-items:center;gap:10px;padding-right:18px;border-right:1px solid rgba(255,255,255,.15)}
+.hdr-logo h1{font-size:16px;font-weight:700}
+.hdr-logo .sub{font-size:9px;opacity:.55;margin-top:1px}
+.hdr-context{display:flex;align-items:center;gap:0;padding:0 0 0 14px;flex:1;overflow:hidden}
+.ctx-sep{color:rgba(255,255,255,.3);font-size:14px;padding:0 6px}
+.ctx-sel{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;border-radius:5px;padding:4px 8px;font-size:11px;font-weight:600;cursor:pointer;max-width:160px}
+.ctx-sel:focus{outline:none;border-color:rgba(255,255,255,.5)}
+.ctx-sel option{color:var(--tx);background:#fff}
+.hdr-r{margin-left:auto;display:flex;gap:5px;align-items:center;padding-left:12px}
+.btn{padding:5px 12px;border-radius:5px;border:none;cursor:pointer;font-size:11px;font-weight:600;transition:.15s;white-space:nowrap}
+.btn-gold{background:var(--gold);color:#1A202C}.btn-gold:hover{background:var(--gold2)}
+.btn-green{background:var(--green);color:#fff}.btn-green:hover{background:var(--green2)}
+.btn-navy{background:var(--navy2);color:#fff}.btn-navy:hover{background:var(--navy3)}
+.btn-ghost{background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.22)}.btn-ghost:hover{background:rgba(255,255,255,.22)}
+.btn-red{background:var(--red);color:#fff}.btn-red:hover{background:var(--red2)}
+.btn-outline{background:#fff;border:1.5px solid var(--gm);color:var(--tx)}.btn-outline:hover{background:var(--gl)}
+.btn-sm{padding:4px 10px;font-size:10px}
+.btn-xs{padding:2px 7px;font-size:10px}
+
+/* ── nav tabs (page switcher) ── */
+.page-nav{background:var(--navy2);display:flex;align-items:center;padding:0 18px;gap:2px;flex-shrink:0;height:36px;border-bottom:2px solid var(--navy3)}
+.pnav-tab{padding:0 16px;height:36px;display:flex;align-items:center;font-size:11px;font-weight:600;color:rgba(255,255,255,.55);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;transition:.12s;white-space:nowrap}
+.pnav-tab:hover{color:rgba(255,255,255,.85)}
+.pnav-tab.active{color:#fff;border-bottom-color:var(--gold)}
+.pnav-r{margin-left:auto;display:flex;gap:5px}
+
+/* ── pages ── */
+.page{display:none;flex:1;overflow:hidden;flex-direction:column}
+.page.active{display:flex}
+
+/* ════════════════════════════════════════
+   ROSTER PAGE
+════════════════════════════════════════ */
+.roster-page{display:flex;flex-direction:column;flex:1;overflow:hidden}
+.rp-toolbar{padding:10px 18px;background:#fff;border-bottom:1px solid var(--gm);display:flex;align-items:center;gap:8px;flex-shrink:0}
+.rp-search{border:1px solid var(--gm);border-radius:5px;padding:5px 10px;font-size:12px;width:220px}
+.rp-search:focus{outline:none;border-color:var(--navy)}
+.rp-count{font-size:11px;color:var(--gd);margin-left:4px}
+.rp-grid{flex:1;overflow-y:auto;padding:14px 18px}
+.rp-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px}
+
+/* player card on roster page */
+.pc{background:#fff;border:1px solid var(--gm);border-radius:9px;overflow:hidden;transition:.12s}
+.pc:hover{box-shadow:0 2px 8px rgba(0,0,0,.1);border-color:#aaa}
+.pc-head{display:flex;align-items:center;gap:10px;padding:11px 13px;border-bottom:1px solid var(--gl)}
+.pc-avatar{width:40px;height:40px;border-radius:50%;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0}
+.pc-avatar.sub{background:var(--bench)}
+.pc-info{flex:1;min-width:0}
+.pc-name{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pc-meta{font-size:10px;color:var(--gd);margin-top:1px}
+.pc-actions{display:flex;gap:5px}
+.pc-body{padding:10px 13px}
+.pc-prios{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
+.prio-cell{display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 3px;border-radius:5px;background:var(--gl);border:1px solid transparent;font-size:9px;text-align:center;line-height:1.2}
+.prio-cell.p1{background:#FDECEA;border-color:#F5A9A9;color:#7B241C}
+.prio-cell.p2{background:#FEF9E7;border-color:#FAD7A0;color:#7D4E00}
+.prio-cell.p3{background:#EAF6EE;border-color:#A9DFBF;color:#1E5C30}
+.prio-cell.p0{color:#aaa}
+.prio-dot{width:8px;height:8px;border-radius:50%}
+.prio-dot.p1{background:#E74C3C}.prio-dot.p2{background:#F39C12}.prio-dot.p3{background:#27AE60}.prio-dot.p0{background:#DDE1E7}
+.prio-lbl{font-size:8px}
+.prio-val{font-weight:700;font-size:10px}
+.pc-none{color:var(--gd);font-size:11px;font-style:italic}
+
+/* add player inline card */
+.pc-add{border:1.5px dashed var(--gm);background:var(--gl);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;min-height:120px;border-radius:9px;color:var(--gd);font-size:12px;font-weight:600;transition:.12s}
+.pc-add:hover{border-color:var(--green);color:var(--green);background:#F0FAF3}
+
+/* ════════════════════════════════════════
+   LINEUP PAGE
+════════════════════════════════════════ */
+.lineup-page{display:flex;flex:1;overflow:hidden}
+
+/* game sidebar */
+.gsidebar{width:190px;background:#fff;border-right:1px solid var(--gm);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0}
+.gside-hdr{padding:9px 12px;border-bottom:1px solid var(--gm);display:flex;align-items:center;justify-content:space-between}
+.gside-hdr span{font-size:10px;font-weight:700;letter-spacing:.8px;color:var(--gd);text-transform:uppercase}
+.glist{overflow-y:auto;flex:1}
+.gitem{padding:8px 12px;border-bottom:1px solid var(--gl);cursor:pointer;transition:.1s}
+.gitem:hover{background:var(--gl)}
+.gitem.active{background:#EEF3FF;border-left:3px solid var(--navy)}
+.gitem.active .gi-name{color:var(--navy)}
+.gi-name{font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gi-meta{font-size:9px;color:var(--gd);margin-top:1px}
+
+/* lineup main */
+.lmain{display:flex;flex-direction:column;flex:1;overflow:hidden}
+.lm-top{padding:9px 13px 0;flex-shrink:0}
+
+/* game info strip */
+.ginfo-strip{display:flex;gap:10px;margin-bottom:8px;align-items:flex-end;flex-wrap:wrap}
+.gfield{display:flex;flex-direction:column;gap:2px}
+.gfield label{font-size:9px;font-weight:600;color:var(--gd);text-transform:uppercase;letter-spacing:.5px}
+.gfield input{border:1px solid var(--gm);border-radius:4px;padding:3px 7px;font-size:11px;width:130px}
+.gfield input:focus{outline:none;border-color:var(--navy)}
+
+/* inning tabs */
+.itabs{display:flex;gap:4px;align-items:center;flex-wrap:wrap;margin-bottom:6px}
+.itab{padding:4px 13px;border-radius:18px;border:1.5px solid var(--gm);background:#fff;cursor:pointer;font-size:11px;font-weight:600;transition:.12s}
+.itab.active{background:var(--navy);color:#fff;border-color:var(--navy)}
+.itab:hover:not(.active){background:var(--gl)}
+.auto-grp{margin-left:auto;display:flex;gap:5px}
+
+/* val bar */
+.vbar{padding:0 13px 4px;flex-shrink:0}
+.vm{display:flex;align-items:flex-start;gap:6px;padding:4px 9px;border-radius:5px;font-size:10px;margin-bottom:3px}
+.vm.error{background:var(--err-bg);border:1px solid var(--err-bd);color:var(--err-tx)}
+.vm.warn{background:var(--warn-bg);border:1px solid var(--warn-bd);color:var(--warn-tx)}
+.vm.ok{background:var(--ok-bg);border:1px solid var(--ok-bd);color:var(--ok-tx)}
+
+/* lineup split */
+.lineup-split{display:flex;flex:1;overflow:hidden;gap:0}
+
+/* left: roster present/batting */
+.lpanel{width:185px;background:#fff;border-right:1px solid var(--gm);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0}
+.lp-sec{padding:7px 11px;border-bottom:1px solid var(--gm);flex-shrink:0}
+.lp-lbl{font-size:9px;font-weight:700;letter-spacing:.8px;color:var(--gd);text-transform:uppercase;margin-bottom:4px}
+.lp-roster{overflow-y:auto;flex:0 0 auto;max-height:200px;border-bottom:1px solid var(--gm)}
+.lp-bat{overflow-y:auto;flex:1}
+.lri{display:flex;align-items:center;gap:5px;padding:4px 11px;border-bottom:1px solid var(--gl);transition:.1s}
+.lri:hover{background:var(--gl)}
+.lri input[type=checkbox]{accent-color:var(--green);width:12px;height:12px;cursor:pointer;flex-shrink:0}
+.lri-num{font-size:9px;color:#fff;background:var(--navy);border-radius:8px;padding:1px 4px;font-weight:700;flex-shrink:0}
+.lri-num.sub{background:var(--bench)}
+.lri-name{flex:1;font-size:10px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.add-sub-row{display:flex;gap:4px;padding:5px 11px;border-bottom:1px solid var(--gm)}
+.add-sub-row input{flex:1;border:1px solid var(--gm);border-radius:4px;padding:3px 6px;font-size:10px}
+.add-sub-row button{background:var(--green);color:#fff;border:none;border-radius:4px;padding:3px 8px;cursor:pointer;font-size:13px;font-weight:700}
+.bi{display:flex;align-items:center;gap:4px;padding:3px 11px;border-bottom:1px solid var(--gl)}
+.bnum{width:15px;font-size:10px;font-weight:700;color:var(--gold);text-align:right;flex-shrink:0}
+.bname{flex:1;font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bb{background:none;border:none;cursor:pointer;color:var(--gd);font-size:10px;padding:0 1px}
+.bb:hover{color:var(--navy)}
+
+/* right: field grid */
+.lfield{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.lscroll{flex:1;overflow-y:auto;padding:0 12px 12px}
+
+.pool-card{background:#fff;border-radius:7px;border:1.5px dashed var(--gm);padding:7px 9px;margin-bottom:9px}
+.phdr{font-size:9px;font-weight:700;letter-spacing:.7px;color:var(--gd);text-transform:uppercase;margin-bottom:5px}
+.pchips{display:flex;flex-wrap:wrap;gap:4px;min-height:26px;padding:2px}
+.pchips.drop-hover{background:#D1FAE5;border-radius:4px}
+
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.pcard{background:#fff;border-radius:7px;box-shadow:0 1px 4px rgba(0,0,0,.07);overflow:hidden}
+.shdr{font-size:9px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;padding:5px 9px}
+.shdr.field{background:var(--green);color:#fff}
+.shdr.bench{background:var(--bench);color:#fff}
+.prow{display:flex;align-items:center;min-height:38px;border-bottom:1px solid var(--gl)}
+.prow:last-child{border-bottom:none}
+.plbl{width:108px;padding:4px 8px;font-size:9px;font-weight:700;color:var(--navy);background:#F7F9FF;border-right:1px solid var(--gl);display:flex;align-items:center;gap:3px;flex-shrink:0}
+.plbl.blbl{background:#EBF5FF;color:var(--bench)}
+.pslot{flex:1;padding:3px 5px;min-height:38px;display:flex;align-items:center;flex-wrap:wrap;gap:3px}
+.pslot.drop-hover{background:#DBEAFE}
+
+/* chips */
+.chip{display:inline-flex;align-items:center;gap:3px;border-radius:18px;padding:3px 7px 3px 4px;font-size:10px;font-weight:600;cursor:grab;user-select:none;box-shadow:0 1px 2px rgba(0,0,0,.18);max-width:155px;white-space:nowrap}
+.chip:active{cursor:grabbing;opacity:.65}
+.chip.dragging{opacity:.3}
+.chip.fc{background:var(--navy);color:#fff}
+.chip.pc{background:#27ae60;color:#fff}
+.chip.bc{background:var(--bench);color:#fff}
+.chip.wc{background:#D35400;color:#fff}
+.cn{background:rgba(255,255,255,.2);border-radius:8px;padding:0 4px;font-size:9px}
+.cx{background:none;border:none;color:rgba(255,255,255,.6);font-size:11px;cursor:pointer;padding:0;line-height:1;margin-left:1px}
+.cx:hover{color:#fff}
+.pdot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.pdot.p1{background:#E74C3C}.pdot.p2{background:#F39C12}.pdot.p3{background:#27AE60}.pdot.px{background:rgba(255,255,255,.3)}
+
+/* ── overlays / modals ── */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:300}
+.modal{background:#fff;border-radius:11px;padding:20px;box-shadow:0 8px 32px rgba(0,0,0,.22);width:500px;max-height:88vh;overflow-y:auto}
+.modal h2{font-size:14px;font-weight:700;margin-bottom:2px}
+.modal .msub{font-size:11px;color:var(--gd);margin-bottom:12px}
+.mactions{display:flex;gap:7px;justify-content:flex-end;margin-top:14px}
+.mrow{display:flex;flex-direction:column;gap:2px;margin-bottom:8px}
+.mrow label{font-size:10px;font-weight:600;color:var(--txm)}
+.mrow input,.mrow select,.mrow textarea{border:1px solid var(--gm);border-radius:4px;padding:4px 7px;font-size:12px;width:100%}
+.mrow input:focus,.mrow select:focus{outline:none;border-color:var(--navy)}
+.mgrid2{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+
+/* priority grid in player modal */
+.pgrid{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:6px}
+.ppos{display:flex;align-items:center;gap:5px;padding:4px 7px;border:1px solid var(--gm);border-radius:5px}
+.ppos label{flex:1;font-size:10px}
+.psel{border:1px solid var(--gm);border-radius:3px;padding:2px 4px;font-size:10px;width:82px}
+.pbadge{width:10px;height:10px;border-radius:50%;flex-shrink:0;transition:.2s}
+.pbadge.p1{background:#E74C3C}.pbadge.p2{background:#F39C12}.pbadge.p3{background:#27AE60}.pbadge.p0{background:var(--gm)}
+
+/* manage list items (seasons/teams) */
+.mli{display:flex;align-items:center;gap:8px;padding:7px 10px;border:1px solid var(--gm);border-radius:6px;margin-bottom:5px}
+.mli:hover{background:var(--gl)}
+.mli.cur{border-color:var(--navy);background:#EEF2FF}
+.mli-info{flex:1}
+.mli-name{font-size:12px;font-weight:600}
+.mli-meta{font-size:10px;color:var(--gd)}
+.divider{height:1px;background:var(--gm);margin:10px 0}
+
+@media print{
+  .page-nav,.gsidebar,.lpanel,.itabs,.auto-grp,.add-sub-row,.vbar,.hdr-r,.rp-toolbar{display:none!important}
+  .lineup-page{display:block}
+  .lfield{overflow:visible}
+  .lscroll{overflow:visible}
+  body{background:#fff;height:auto;overflow:auto}
+}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-thumb{background:var(--gm);border-radius:3px}
+::-webkit-scrollbar-track{background:transparent}
+</style>
+</head>
+<body>
+
+<!-- ════════════ HEADER ════════════ -->
+<header>
+  <div class="hdr-logo">
+    <span style="font-size:22px">⚾</span>
+    <div><h1>Softball Manager</h1><div class="sub">Lineup · Roster · Stats</div></div>
+  </div>
+  <div class="hdr-context">
+    <span class="ctx-sep">Season:</span>
+    <select class="ctx-sel" id="seasonSel" onchange="onSeasonChange()"></select>
+    <span class="ctx-sep">›</span>
+    <span class="ctx-sep">Team:</span>
+    <select class="ctx-sel" id="teamSel" onchange="onTeamChange()"></select>
+  </div>
+  <div class="hdr-r">
+    <button class="btn btn-ghost btn-sm" onclick="doImport()">⬆ Import</button>
+    <button class="btn btn-ghost btn-sm" onclick="exportAll()">⬇ Export JSON</button>
+    <button class="btn btn-ghost btn-sm" onclick="window.print()">🖨 Print</button>
+  </div>
+</header>
+
+<!-- ════════════ PAGE NAV ════════════ -->
+<div class="page-nav">
+  <div class="pnav-tab active" data-page="roster" onclick="setPage('roster')">👥 Roster</div>
+  <div class="pnav-tab" data-page="lineup" onclick="setPage('lineup')">📋 Lineup</div>
+  <div class="pnav-r">
+    <button class="btn btn-ghost btn-sm" onclick="openSeasonModal()">⚙ Manage Seasons</button>
+    <button class="btn btn-ghost btn-sm" onclick="openTeamModal()">⚙ Manage Teams</button>
+  </div>
+</div>
+
+<!-- ════════════ ROSTER PAGE ════════════ -->
+<div class="page active" id="page-roster">
+  <div class="roster-page">
+    <div class="rp-toolbar">
+      <input class="rp-search" type="text" id="rosterSearch" placeholder="Search players…" oninput="renderRosterPage()">
+      <span class="rp-count" id="rosterCount"></span>
+      <div style="margin-left:auto;display:flex;gap:6px">
+        <button class="btn btn-outline btn-sm" onclick="exportCSVRoster()">📄 Export CSV</button>
+        <button class="btn btn-green btn-sm" onclick="openAddPlayerModal()">+ Add Player</button>
+      </div>
+    </div>
+    <div class="rp-grid">
+      <div class="rp-cards" id="rosterCards"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════ LINEUP PAGE ════════════ -->
+<div class="page" id="page-lineup">
+  <div class="lineup-page">
+
+    <!-- game sidebar -->
+    <div class="gsidebar">
+      <div class="gside-hdr">
+        <span>Games</span>
+        <button class="btn btn-green btn-xs" onclick="openNewGameModal()">+</button>
+      </div>
+      <div class="glist" id="gameList"></div>
+    </div>
+
+    <!-- lineup main -->
+    <div class="lmain">
+      <div class="lm-top">
+        <div class="ginfo-strip" id="gameInfoStrip"></div>
+        <div class="itabs" id="inningTabs"></div>
+      </div>
+      <div class="vbar" id="valBar"></div>
+
+      <div class="lineup-split">
+        <!-- left panel: present players + batting -->
+        <div class="lpanel">
+          <div class="lp-sec" style="padding-bottom:3px">
+            <div class="lp-lbl" style="margin-bottom:1px">Present <span style="font-weight:400;font-size:9px">✓ = playing today</span></div>
+          </div>
+          <div class="lp-roster" id="lpRoster"></div>
+          <div class="add-sub-row">
+            <input type="text" id="subName" placeholder="Add sub…" onkeydown="if(event.key==='Enter')addSub()">
+            <button onclick="addSub()">+</button>
+          </div>
+          <div class="lp-sec" style="padding-bottom:3px;flex-shrink:0">
+            <div class="lp-lbl" style="margin-bottom:1px">Batting Order</div>
+          </div>
+          <div class="lp-bat" id="lpBat"></div>
+        </div>
+
+        <!-- right: field -->
+        <div class="lfield">
+          <div class="lscroll">
+            <div class="pool-card">
+              <div class="phdr">Unassigned — drag to a slot</div>
+              <div class="pchips" id="poolChips"
+                   ondragover="dOver(event,'pool')" ondragleave="dLeave(event)" ondrop="dDrop(event,'pool')"></div>
+            </div>
+            <div class="fgrid">
+              <div>
+                <div class="pcard">
+                  <div class="shdr field">⚾ Field Positions</div>
+                  <div id="fieldSlots"></div>
+                </div>
+              </div>
+              <div>
+                <div class="pcard" style="border:1px solid #BDD7F0">
+                  <div class="shdr bench">🪑 Bench</div>
+                  <div id="benchSlots"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════ MODALS ════════════ -->
+
+<!-- Add/Edit Player -->
+<div id="mPlayer" class="overlay" style="display:none">
+  <div class="modal">
+    <h2 id="mpTitle">Add Player</h2>
+    <p class="msub">Set player details and position priorities for auto-populate.</p>
+    <div class="mgrid2">
+      <div class="mrow" style="grid-column:1/-1"><label>Full Name</label><input id="mpName" placeholder="First Last"></div>
+      <div class="mrow"><label>Jersey #</label><input id="mpJersey" placeholder="e.g. 12"></div>
+      <div class="mrow"><label>Primary Position (label)</label><input id="mpPrimary" placeholder="e.g. Pitcher"></div>
+    </div>
+    <div style="font-size:10px;font-weight:700;letter-spacing:.8px;color:var(--gd);text-transform:uppercase;margin-bottom:6px;margin-top:4px">Position Priorities</div>
+    <p class="msub" style="margin-bottom:8px">1 = best fit &nbsp;·&nbsp; 2 = capable &nbsp;·&nbsp; 3 = can play &nbsp;·&nbsp; blank = skip</p>
+    <div class="pgrid" id="priorityGrid"></div>
+    <div class="mactions">
+      <button class="btn btn-red btn-sm" id="mpDeleteBtn" onclick="deletePlayer()" style="margin-right:auto;display:none">Delete Player</button>
+      <button class="btn btn-outline" onclick="closeModals()">Cancel</button>
+      <button class="btn btn-green" onclick="savePlayer()">Save Player</button>
+    </div>
+  </div>
+</div>
+
+<!-- New Game -->
+<div id="mNewGame" class="overlay" style="display:none">
+  <div class="modal" style="width:420px">
+    <h2>New Game</h2>
+    <p class="msub">Roster and batting order carry over from current game as a starting point.</p>
+    <div class="mgrid2">
+      <div class="mrow" style="grid-column:1/-1"><label>Game Name</label><input id="ngName" placeholder="e.g. Game 4 vs Eagles"></div>
+      <div class="mrow"><label>Date</label><input type="date" id="ngDate"></div>
+      <div class="mrow"><label>Opponent</label><input id="ngOpp" placeholder="Team name"></div>
+      <div class="mrow" style="grid-column:1/-1"><label>Location</label><input id="ngLoc" placeholder="Field / venue"></div>
+    </div>
+    <div class="mactions">
+      <button class="btn btn-outline" onclick="closeModals()">Cancel</button>
+      <button class="btn btn-green" onclick="createGame()">Create Game</button>
+    </div>
+  </div>
+</div>
+
+<!-- Manage Seasons -->
+<div id="mSeasons" class="overlay" style="display:none">
+  <div class="modal" style="width:420px">
+    <h2>Manage Seasons</h2>
+    <p class="msub">Seasons group your teams. Example: "Spring 2025", "Fall 2025".</p>
+    <div id="seasonList"></div>
+    <div class="divider"></div>
+    <div style="display:flex;gap:8px;align-items:flex-end">
+      <div class="mrow" style="flex:1;margin-bottom:0"><label>New Season Name</label><input id="newSeasonName" placeholder="e.g. Spring 2026" onkeydown="if(event.key==='Enter')addSeason()"></div>
+      <button class="btn btn-green" onclick="addSeason()">Add</button>
+    </div>
+    <div class="mactions"><button class="btn btn-outline" onclick="closeModals()">Close</button></div>
+  </div>
+</div>
+
+<!-- Manage Teams -->
+<div id="mTeams" class="overlay" style="display:none">
+  <div class="modal" style="width:420px">
+    <h2>Manage Teams</h2>
+    <p class="msub" id="mTeamsSub">Teams belong to the selected season.</p>
+    <div id="teamList"></div>
+    <div class="divider"></div>
+    <div style="display:flex;gap:8px;align-items:flex-end">
+      <div class="mrow" style="flex:1;margin-bottom:0"><label>New Team Name</label><input id="newTeamName" placeholder="e.g. Lady Hawks" onkeydown="if(event.key==='Enter')addTeam()"></div>
+      <button class="btn btn-green" onclick="addTeam()">Add</button>
+    </div>
+    <div class="mactions"><button class="btn btn-outline" onclick="closeModals()">Close</button></div>
+  </div>
+</div>
+
+<input type="file" id="importFile" accept=".json" style="display:none" onchange="handleImport(event)">
+
+<script>
+// ══════════════════════════════════════════════════════
+// CONSTANTS
+// ══════════════════════════════════════════════════════
+const FIELD_POS=[
+  {id:'pitcher', label:'Pitcher',      icon:'⚾'},
+  {id:'catcher', label:'Catcher',      icon:'🧤'},
+  {id:'first',   label:'1st Base',     icon:'1️⃣'},
+  {id:'second',  label:'2nd Base',     icon:'2️⃣'},
+  {id:'third',   label:'3rd Base',     icon:'3️⃣'},
+  {id:'short',   label:'Shortstop',    icon:'🔷'},
+  {id:'left',    label:'Left Field',   icon:'◀'},
+  {id:'center',  label:'Center Field', icon:'🎯'},
+  {id:'right',   label:'Right Field',  icon:'▶'},
+];
+const BENCH_POS=[
+  {id:'bench1',label:'Bench 1'},{id:'bench2',label:'Bench 2'},
+  {id:'bench3',label:'Bench 3'},{id:'bench4',label:'Bench 4'},
+  {id:'bench5',label:'Bench 5'},
+];
+const ALL_POS=[...FIELD_POS,...BENCH_POS];
+const INNINGS=[1,2,3,4,5];
+const SK='softball_v5';
+
+// ══════════════════════════════════════════════════════
+// STATE
+// Data shape:
+// S = {
+//   seasons: [{id, name}],
+//   teams:   [{id, seasonId, name, roster:[player], games:[game]}],
+//   activeSeasonId, activeTeamId
+// }
+// player: {id, name, jersey, primaryPos, isSub, priorities:{posId:1|2|3}}
+// game:   {id, name, date, opponent, location, presentPlayers:[], battingOrder:[], lineup:{inn:{posId:pid|null}}}
+// ══════════════════════════════════════════════════════
+let S={seasons:[],teams:[],activeSeasonId:null,activeTeamId:null};
+let currentPage='roster';
+let currentInning=1;
+let drag=null;
+let editPid=null;
+let subN=30;
+
+// ── helpers ──
+const persist=()=>{try{localStorage.setItem(SK,JSON.stringify(S));}catch(e){}};
+const loadState=()=>{try{const r=localStorage.getItem(SK);if(r)S=JSON.parse(r);}catch(e){}};
+const uid=()=>'id_'+Date.now()+'_'+Math.random().toString(36).slice(2,6);
+
+const activeSeason=()=>S.seasons.find(s=>s.id===S.activeSeasonId)||null;
+const activeTeam=()=>S.teams.find(t=>t.id===S.activeTeamId)||null;
+const activeGames=()=>activeTeam()?.games||[];
+const activeRoster=()=>activeTeam()?.roster||[];
+
+let activeGameId=null;
+const activeGame=()=>activeGames().find(g=>g.id===activeGameId)||null;
+const getP=id=>activeRoster().find(p=>p.id===id);
+
+// ══════════════════════════════════════════════════════
+// INIT / DEFAULT DATA
+// ══════════════════════════════════════════════════════
+function emptyLineup(){
+  const l={};
+  INNINGS.forEach(i=>{l[i]={};ALL_POS.forEach(p=>{l[i][p.id]=null;});});
+  return l;
+}
+function makeGame(name){
+  return{id:uid(),name,date:'',opponent:'',location:'',presentPlayers:[],battingOrder:[],lineup:emptyLineup()};
+}
+
+function buildDefaultData(){
+  const seasonId=uid();
+  const teamId=uid();
+  S.seasons=[{id:seasonId,name:'Spring 2025'}];
+  S.activeSeasonId=seasonId;
+
+  const roster=[
+    {id:uid(),name:'Alex Johnson',  jersey:'7', primaryPos:'Pitcher',      isSub:false,priorities:{pitcher:1,center:3}},
+    {id:uid(),name:'Sam Rivera',    jersey:'12',primaryPos:'Catcher',      isSub:false,priorities:{catcher:1,first:3}},
+    {id:uid(),name:'Jordan Lee',    jersey:'3', primaryPos:'1st Base',     isSub:false,priorities:{first:1,third:2}},
+    {id:uid(),name:'Casey Morgan',  jersey:'21',primaryPos:'2nd Base',     isSub:false,priorities:{second:1,short:2}},
+    {id:uid(),name:'Taylor Smith',  jersey:'5', primaryPos:'3rd Base',     isSub:false,priorities:{third:1,short:2,second:3}},
+    {id:uid(),name:'Riley Davis',   jersey:'9', primaryPos:'Shortstop',    isSub:false,priorities:{short:1,second:2,third:2}},
+    {id:uid(),name:'Morgan Brown',  jersey:'14',primaryPos:'Left Field',   isSub:false,priorities:{left:1,center:2,right:3}},
+    {id:uid(),name:'Drew Wilson',   jersey:'22',primaryPos:'Center Field', isSub:false,priorities:{center:1,left:2,right:2}},
+    {id:uid(),name:'Jamie Garcia',  jersey:'11',primaryPos:'Right Field',  isSub:false,priorities:{right:1,center:2,left:3}},
+    {id:uid(),name:'Quinn Martinez',jersey:'8', primaryPos:'Utility',      isSub:false,priorities:{first:2,third:3,left:3}},
+    {id:uid(),name:'Avery Thompson',jersey:'17',primaryPos:'Utility',      isSub:false,priorities:{second:2,short:3,pitcher:3}},
+    {id:uid(),name:'Blake Anderson',jersey:'4', primaryPos:'Utility',      isSub:false,priorities:{catcher:2,first:3,left:3}},
+  ];
+  const g=makeGame('Game 1');
+  g.date=new Date().toISOString().slice(0,10);
+  g.presentPlayers=roster.filter(p=>!p.isSub).map(p=>p.id);
+  g.battingOrder=[...g.presentPlayers];
+
+  S.teams=[{id:teamId,seasonId,name:'Lady Hawks',roster,games:[g]}];
+  S.activeTeamId=teamId;
+}
+
+function init(){
+  loadState();
+  if(!S.seasons||S.seasons.length===0) buildDefaultData();
+  if(!S.activeSeasonId) S.activeSeasonId=S.seasons[0]?.id;
+  if(!S.activeTeamId){
+    const t=S.teams.find(t=>t.seasonId===S.activeSeasonId);
+    S.activeTeamId=t?.id||null;
+  }
+  const games=activeGames();
+  if(games.length>0&&!activeGameId) activeGameId=games[0].id;
+  persist();
+  renderAll();
+}
+
+// ══════════════════════════════════════════════════════
+// RENDER ALL
+// ══════════════════════════════════════════════════════
+function renderAll(){
+  renderSelectors();
+  renderRosterPage();
+  renderGameList();
+  renderGameInfo();
+  renderTabs();
+  renderLpRoster();
+  renderBatOrder();
+  renderLineup();
+  renderVal();
+}
+
+// ══════════════════════════════════════════════════════
+// PAGE NAV
+// ══════════════════════════════════════════════════════
+function setPage(p){
+  currentPage=p;
+  document.querySelectorAll('.page').forEach(el=>el.classList.remove('active'));
+  document.getElementById('page-'+p).classList.add('active');
+  document.querySelectorAll('.pnav-tab').forEach(el=>{
+    el.classList.toggle('active',el.dataset.page===p);
+  });
+}
+
+// ══════════════════════════════════════════════════════
+// SEASON / TEAM SELECTORS
+// ══════════════════════════════════════════════════════
+function renderSelectors(){
+  const ss=document.getElementById('seasonSel');
+  const ts=document.getElementById('teamSel');
+  const curSeason=S.activeSeasonId;
+  const curTeam=S.activeTeamId;
+
+  ss.innerHTML=S.seasons.map(s=>`<option value="${s.id}" ${s.id===curSeason?'selected':''}>${s.name}</option>`).join('');
+  if(!S.seasons.length) ss.innerHTML='<option>No seasons</option>';
+
+  const seasonTeams=S.teams.filter(t=>t.seasonId===curSeason);
+  ts.innerHTML=seasonTeams.map(t=>`<option value="${t.id}" ${t.id===curTeam?'selected':''}>${t.name}</option>`).join('');
+  if(!seasonTeams.length) ts.innerHTML='<option>No teams</option>';
+}
+
+function onSeasonChange(){
+  S.activeSeasonId=document.getElementById('seasonSel').value;
+  const t=S.teams.find(t=>t.seasonId===S.activeSeasonId);
+  S.activeTeamId=t?.id||null;
+  activeGameId=activeGames()[0]?.id||null;
+  persist(); renderAll();
+}
+function onTeamChange(){
+  S.activeTeamId=document.getElementById('teamSel').value;
+  activeGameId=activeGames()[0]?.id||null;
+  persist(); renderAll();
+}
+
+// ══════════════════════════════════════════════════════
+// ROSTER PAGE
+// ══════════════════════════════════════════════════════
+function renderRosterPage(){
+  const roster=activeRoster();
+  const q=(document.getElementById('rosterSearch')?.value||'').toLowerCase();
+  const filtered=roster.filter(p=>!q||p.name.toLowerCase().includes(q)||p.jersey.includes(q)||p.primaryPos.toLowerCase().includes(q));
+  document.getElementById('rosterCount').textContent=`${filtered.length} of ${roster.length} players`;
+
+  const cards=filtered.map(p=>playerCard(p)).join('');
+  document.getElementById('rosterCards').innerHTML=cards+`
+    <div class="pc-add" onclick="openAddPlayerModal()">
+      <span style="font-size:22px">+</span>
+      <span>Add Player</span>
+    </div>`;
+}
+
+function playerCard(p){
+  const prios=FIELD_POS.map(pos=>{
+    const v=(p.priorities||{})[pos.id];
+    const cls=v?'p'+v:'p0';
+    const lbl=v===1?'Best':v===2?'Good':v===3?'Can':'—';
+    return `<div class="prio-cell ${cls}">
+      <div class="prio-dot ${cls}"></div>
+      <div class="prio-lbl">${pos.label.split(' ')[0]}</div>
+      <div class="prio-val">${lbl}</div>
+    </div>`;
+  }).join('');
+
+  const initials=p.name.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
+  return `<div class="pc">
+    <div class="pc-head">
+      <div class="pc-avatar ${p.isSub?'sub':''}">${initials}</div>
+      <div class="pc-info">
+        <div class="pc-name">${p.name}</div>
+        <div class="pc-meta">#${p.jersey} &nbsp;·&nbsp; ${p.primaryPos}${p.isSub?' &nbsp;·&nbsp; <em>Sub</em>':''}</div>
+      </div>
+      <div class="pc-actions">
+        <button class="btn btn-outline btn-xs" onclick="openPlayerModal('${p.id}')">✏️ Edit</button>
+      </div>
+    </div>
+    <div class="pc-body">
+      <div class="pc-prios">${prios}</div>
+    </div>
+  </div>`;
+}
+
+function exportCSVRoster(){
+  const roster=activeRoster();
+  const team=activeTeam();
+  let csv=`Roster — ${team?.name||''} (${activeSeason()?.name||''})\n\nName,Jersey,Primary Position,`+FIELD_POS.map(p=>p.label).join(',')+'\n';
+  roster.forEach(p=>{
+    const prios=FIELD_POS.map(pos=>(p.priorities||{})[pos.id]||'').join(',');
+    csv+=`${p.name},${p.jersey},${p.primaryPos},${prios}\n`;
+  });
+  dl(csv,'text/csv',`Roster_${(team?.name||'team').replace(/\s+/g,'_')}.csv`);
+}
+
+// ══════════════════════════════════════════════════════
+// GAME SIDEBAR
+// ══════════════════════════════════════════════════════
+function renderGameList(){
+  const games=activeGames();
+  document.getElementById('gameList').innerHTML=games.length===0
+    ?'<div style="padding:12px;font-size:11px;color:var(--gd);font-style:italic">No games yet. Create one →</div>'
+    :games.map(g=>`
+      <div class="gitem ${g.id===activeGameId?'active':''}" onclick="switchGame('${g.id}')">
+        <div class="gi-name">${g.name}</div>
+        <div class="gi-meta">${g.date||'No date'}${g.opponent?' · '+g.opponent:''}</div>
+      </div>`).join('');
+}
+
+function switchGame(id){
+  activeGameId=id; currentInning=1;
+  renderGameList(); renderGameInfo(); renderTabs();
+  renderLpRoster(); renderBatOrder(); renderLineup(); renderVal();
+}
+
+// ══════════════════════════════════════════════════════
+// GAME INFO STRIP
+// ══════════════════════════════════════════════════════
+function renderGameInfo(){
+  const g=activeGame();
+  const el=document.getElementById('gameInfoStrip');
+  if(!g){el.innerHTML='<span style="font-size:11px;color:var(--gd);font-style:italic">Select or create a game</span>';return;}
+  el.innerHTML=`
+    <div class="gfield"><label>Game Name</label><input value="${g.name||''}" onchange="updateGame('name',this.value)" style="width:150px"></div>
+    <div class="gfield"><label>Date</label><input type="date" value="${g.date||''}" onchange="updateGame('date',this.value)"></div>
+    <div class="gfield"><label>Opponent</label><input value="${g.opponent||''}" placeholder="vs…" onchange="updateGame('opponent',this.value)"></div>
+    <div class="gfield"><label>Location</label><input value="${g.location||''}" placeholder="Field…" onchange="updateGame('location',this.value)" style="width:150px"></div>
+    <div style="margin-left:auto;display:flex;gap:5px;align-items:flex-end">
+      <button class="btn btn-outline btn-sm" onclick="exportCSVGame()">📄 CSV</button>
+      <button class="btn btn-red btn-sm" onclick="deleteGame()">🗑 Delete</button>
+    </div>`;
+}
+
+function updateGame(field,val){
+  const g=activeGame(); if(!g) return;
+  g[field]=val; persist(); renderGameList();
+}
+
+function deleteGame(){
+  if(!confirm('Delete this game?')) return;
+  const team=activeTeam(); if(!team) return;
+  team.games=team.games.filter(g=>g.id!==activeGameId);
+  activeGameId=team.games[0]?.id||null;
+  persist(); renderAll();
+}
+
+// ══════════════════════════════════════════════════════
+// INNING TABS
+// ══════════════════════════════════════════════════════
+function renderTabs(){
+  document.getElementById('inningTabs').innerHTML=
+    INNINGS.map(i=>`<button class="itab ${i===currentInning?'active':''}" onclick="setInning(${i})">Inning ${i}</button>`).join('')+`
+    <div class="auto-grp">
+      <button class="btn btn-green btn-sm" onclick="autoInning(currentInning)">⚡ Auto Inning ${currentInning}</button>
+      <button class="btn btn-navy btn-sm" onclick="autoAll()">⚡⚡ Auto All</button>
+    </div>`;
+}
+function setInning(i){currentInning=i;renderTabs();renderLineup();renderVal();}
+
+// ══════════════════════════════════════════════════════
+// LEFT PANEL (lineup page)
+// ══════════════════════════════════════════════════════
+function renderLpRoster(){
+  const g=activeGame(); const roster=activeRoster();
+  document.getElementById('lpRoster').innerHTML=roster.map(p=>{
+    const present=g&&g.presentPlayers.includes(p.id);
+    return `<div class="lri">
+      <input type="checkbox" ${present?'checked':''} onchange="togglePresent('${p.id}',this.checked)">
+      <span class="lri-num ${p.isSub?'sub':''}">#${p.jersey}</span>
+      <span class="lri-name">${p.name}</span>
+    </div>`;
+  }).join('');
+}
+
+function togglePresent(pid,on){
+  const g=activeGame(); if(!g) return;
+  if(on){
+    if(!g.presentPlayers.includes(pid)) g.presentPlayers.push(pid);
+    if(!g.battingOrder.includes(pid)) g.battingOrder.push(pid);
+  } else {
+    g.presentPlayers=g.presentPlayers.filter(id=>id!==pid);
+    g.battingOrder=g.battingOrder.filter(id=>id!==pid);
+    INNINGS.forEach(i=>ALL_POS.forEach(pos=>{if(g.lineup[i][pos.id]===pid)g.lineup[i][pos.id]=null;}));
+  }
+  persist(); renderLpRoster(); renderBatOrder(); renderLineup(); renderVal();
+}
+
+function addSub(){
+  const inp=document.getElementById('subName');
+  const name=inp.value.trim(); if(!name) return;
+  const team=activeTeam(); if(!team) return;
+  const pid=uid();
+  team.roster.push({id:pid,name,jersey:String(subN++),primaryPos:'Sub',isSub:true,priorities:{}});
+  const g=activeGame();
+  if(g){g.presentPlayers.push(pid);g.battingOrder.push(pid);}
+  inp.value=''; persist(); renderAll();
+}
+
+function renderBatOrder(){
+  const g=activeGame();
+  const el=document.getElementById('lpBat');
+  if(!g){el.innerHTML='';return;}
+  const pres=g.battingOrder.filter(id=>g.presentPlayers.includes(id));
+  el.innerHTML=pres.map((pid,i)=>{
+    const p=getP(pid); if(!p) return '';
+    return `<div class="bi">
+      <span class="bnum">${i+1}</span>
+      <span class="bname">${p.name}</span>
+      <button class="bb" onclick="moveBat('${pid}',-1)">▲</button>
+      <button class="bb" onclick="moveBat('${pid}',1)">▼</button>
+    </div>`;
+  }).join('');
+}
+
+function moveBat(pid,dir){
+  const g=activeGame(); if(!g) return;
+  const pres=g.battingOrder.filter(id=>g.presentPlayers.includes(id));
+  const i=pres.indexOf(pid),ni=i+dir;
+  if(ni<0||ni>=pres.length) return;
+  const ai=g.battingOrder.indexOf(pres[i]),bi=g.battingOrder.indexOf(pres[ni]);
+  [g.battingOrder[ai],g.battingOrder[bi]]=[g.battingOrder[bi],g.battingOrder[ai]];
+  persist(); renderBatOrder();
+}
+
+// ══════════════════════════════════════════════════════
+// LINEUP RENDER
+// ══════════════════════════════════════════════════════
+function renderLineup(){renderPool();renderField();renderBench();}
+
+function assigned(inn){
+  const g=activeGame(); const s=new Set();
+  if(!g) return s;
+  ALL_POS.forEach(pos=>{if(g.lineup[inn][pos.id])s.add(g.lineup[inn][pos.id]);});
+  return s;
+}
+
+function renderPool(){
+  const g=activeGame(); const el=document.getElementById('poolChips');
+  if(!g){el.innerHTML='';return;}
+  const asgn=assigned(currentInning);
+  const unasn=g.presentPlayers.filter(id=>!asgn.has(id));
+  el.innerHTML=unasn.length===0
+    ?'<span style="font-size:10px;color:var(--gd);font-style:italic">All players assigned ✓</span>'
+    :unasn.map(pid=>chip(pid,'pool')).join('');
+}
+
+function chip(pid,posId){
+  const p=getP(pid); if(!p) return '';
+  const isBench=BENCH_POS.some(b=>b.id===posId);
+  const consec=isBench&&benchConsec(pid,currentInning);
+  const cls=consec?'wc':isBench?'bc':posId==='pool'?'pc':'fc';
+  const v=(p.priorities||{})[posId];
+  const dotCls=posId==='pool'||!v?'px':'p'+v;
+  return `<div class="chip ${cls}" draggable="true"
+    ondragstart="dStart(event,'${pid}','${posId}')"
+    ondragend="dEnd(event)" title="${p.name}">
+    <span class="pdot ${dotCls}"></span>
+    <span class="cn">#${p.jersey}</span>
+    <span>${p.name}</span>
+    ${posId!=='pool'?`<button class="cx" onclick="clearSlot('${posId}')">×</button>`:''}
+  </div>`;
+}
+
+function renderField(){
+  const g=activeGame();
+  document.getElementById('fieldSlots').innerHTML=FIELD_POS.map(pos=>{
+    const pid=g?g.lineup[currentInning][pos.id]:null;
+    return `<div class="prow">
+      <div class="plbl">${pos.icon} ${pos.label}</div>
+      <div class="pslot" ondragover="dOver(event,'${pos.id}')" ondragleave="dLeave(event)" ondrop="dDrop(event,'${pos.id}')">
+        ${pid?chip(pid,pos.id):'<span style="font-size:9px;color:var(--gd);font-style:italic;padding-left:3px">drag here</span>'}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderBench(){
+  const g=activeGame();
+  document.getElementById('benchSlots').innerHTML=BENCH_POS.map(pos=>{
+    const pid=g?g.lineup[currentInning][pos.id]:null;
+    const warn=pid&&benchConsec(pid,currentInning);
+    return `<div class="prow" ${warn?'style="background:#FFF8E1"':''}>
+      <div class="plbl blbl">🪑 ${pos.label}</div>
+      <div class="pslot" ondragover="dOver(event,'${pos.id}')" ondragleave="dLeave(event)" ondrop="dDrop(event,'${pos.id}')">
+        ${pid?chip(pid,pos.id):'<span style="font-size:9px;color:var(--gd);font-style:italic;padding-left:3px">drag here</span>'}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function clearSlot(posId){
+  const g=activeGame(); if(!g) return;
+  g.lineup[currentInning][posId]=null; persist(); renderLineup(); renderVal();
+}
+
+// ── drag/drop ──
+function dStart(e,pid,from){drag={pid,from};e.dataTransfer.effectAllowed='move';setTimeout(()=>e.target.classList.add('dragging'),0);}
+function dEnd(e){e.target.classList.remove('dragging');drag=null;}
+function dOver(e,to){e.preventDefault();e.currentTarget.classList.add('drop-hover');}
+function dLeave(e){e.currentTarget.classList.remove('drop-hover');}
+function dDrop(e,to){
+  e.preventDefault();e.currentTarget.classList.remove('drop-hover');
+  if(!drag) return;
+  const{pid,from}=drag;drag=null;
+  const g=activeGame();if(!g) return;
+  const isBench=BENCH_POS.some(b=>b.id===to);
+  if(isBench&&to!=='pool'&&benchConsec(pid,currentInning)){
+    flashWarn(getP(pid)?.name+' cannot bench 2 consecutive innings!');return;
+  }
+  const occ=to!=='pool'?g.lineup[currentInning][to]:null;
+  if(to!=='pool') g.lineup[currentInning][to]=pid;
+  if(from!=='pool') g.lineup[currentInning][from]=occ||null;
+  persist();renderLineup();renderVal();
+}
+
+// ══════════════════════════════════════════════════════
+// AUTO-POPULATE
+// ══════════════════════════════════════════════════════
+function score(p,posId){const v=(p.priorities||{})[posId];return v===1?100:v===2?60:v===3?30:5;}
+
+function autoInning(inn){
+  const g=activeGame(); if(!g) return;
+  ALL_POS.forEach(pos=>{g.lineup[inn][pos.id]=null;});
+  const mustPlay=new Set();
+  if(inn>1) BENCH_POS.forEach(b=>{const p=g.lineup[inn-1][b.id];if(p)mustPlay.add(p);});
+  const players=g.presentPlayers.filter(id=>getP(id));
+  const rem=new Set(players);
+  const fieldSlots=[...FIELD_POS.map(p=>p.id)];
+  const benchSlots=[...BENCH_POS.map(p=>p.id)];
+  const res={};
+  let iter=0;
+  while(fieldSlots.length>0&&rem.size>0&&iter++<200){
+    let best=-1,bPid=null,bPos=null;
+    fieldSlots.forEach(posId=>{
+      rem.forEach(pid=>{
+        const p=getP(pid);if(!p) return;
+        let s=score(p,posId);
+        if(mustPlay.has(pid)) s+=200;
+        if(s>best){best=s;bPid=pid;bPos=posId;}
+      });
+    });
+    if(!bPid) break;
+    res[bPos]=bPid;
+    fieldSlots.splice(fieldSlots.indexOf(bPos),1);
+    rem.delete(bPid);
+  }
+  let bi=0;
+  rem.forEach(pid=>{if(bi<benchSlots.length)res[benchSlots[bi++]]=pid;});
+  Object.entries(res).forEach(([pos,pid])=>{g.lineup[inn][pos]=pid;});
+  persist();renderLineup();renderVal();
+}
+function autoAll(){INNINGS.forEach(i=>autoInning(i));}
+
+// ══════════════════════════════════════════════════════
+// VALIDATION
+// ══════════════════════════════════════════════════════
+function benchConsec(pid,inn){
+  if(inn<=1) return false;
+  const g=activeGame();if(!g) return false;
+  return BENCH_POS.some(b=>g.lineup[inn-1][b.id]===pid);
+}
+
+function renderVal(){
+  const g=activeGame();const el=document.getElementById('valBar');
+  if(!g){el.innerHTML='';return;}
+  const msgs=[];
+  INNINGS.forEach(inn=>{
+    const asgn=assigned(inn);
+    const unasn=g.presentPlayers.filter(id=>!asgn.has(id));
+    if(unasn.length) msgs.push({t:'error',inn,txt:`Inning ${inn}: ${unasn.map(id=>getP(id)?.name).filter(Boolean).join(', ')} not assigned`});
+    BENCH_POS.forEach(b=>{
+      const pid=g.lineup[inn][b.id];
+      if(pid&&benchConsec(pid,inn)) msgs.push({t:'error',inn,txt:`Inning ${inn}: ${getP(pid)?.name} benched 2 consecutive innings`});
+    });
+    const empty=FIELD_POS.filter(pos=>!g.lineup[inn][pos.id]);
+    if(empty.length&&asgn.size>0) msgs.push({t:'warn',inn,txt:`Inning ${inn}: Empty — ${empty.map(p=>p.label).join(', ')}`});
+  });
+  if(!msgs.length){el.innerHTML='<div class="vm ok">✅ All innings valid</div>';return;}
+  const mine=msgs.filter(m=>m.inn===currentInning),rest=msgs.filter(m=>m.inn!==currentInning);
+  el.innerHTML=[...mine,...rest].slice(0,4).map(m=>`<div class="vm ${m.t}">${m.t==='error'?'⛔':'⚠️'} ${m.txt}</div>`).join('');
+}
+
+function flashWarn(txt){
+  const el=document.getElementById('valBar');
+  const d=document.createElement('div');d.className='vm error';d.textContent='⛔ '+txt;
+  el.prepend(d);setTimeout(()=>d.remove(),3000);
+}
+
+// ══════════════════════════════════════════════════════
+// PLAYER MODAL (add / edit)
+// ══════════════════════════════════════════════════════
+function openAddPlayerModal(){editPid=null;openPlayerModal(null);}
+function openPlayerModal(pid){
+  editPid=pid;
+  const p=pid?getP(pid):null;
+  document.getElementById('mpTitle').textContent=p?'Edit Player: '+p.name:'Add Player';
+  document.getElementById('mpName').value=p?.name||'';
+  document.getElementById('mpJersey').value=p?.jersey||'';
+  document.getElementById('mpPrimary').value=p?.primaryPos||'';
+  document.getElementById('mpDeleteBtn').style.display=p?'':'none';
+  document.getElementById('priorityGrid').innerHTML=FIELD_POS.map(pos=>{
+    const v=p?(p.priorities||{})[pos.id]||'':'';
+    return `<div class="ppos">
+      <span class="pbadge ${v?'p'+v:'p0'}" id="pb_${pos.id}"></span>
+      <label>${pos.label}</label>
+      <select class="psel" id="ps_${pos.id}" onchange="updBadge('${pos.id}',this.value)">
+        <option value="">— skip</option>
+        <option value="1" ${v==1?'selected':''}>1 – Best fit</option>
+        <option value="2" ${v==2?'selected':''}>2 – Capable</option>
+        <option value="3" ${v==3?'selected':''}>3 – Can play</option>
+      </select>
+    </div>`;
+  }).join('');
+  document.getElementById('mPlayer').style.display='flex';
+}
+
+function updBadge(posId,v){
+  const b=document.getElementById('pb_'+posId);
+  if(b) b.className='pbadge '+(v?'p'+v:'p0');
+}
+
+function savePlayer(){
+  const team=activeTeam(); if(!team) return;
+  const name=document.getElementById('mpName').value.trim();
+  const jersey=document.getElementById('mpJersey').value.trim();
+  const primaryPos=document.getElementById('mpPrimary').value.trim();
+  const priorities={};
+  FIELD_POS.forEach(pos=>{const v=document.getElementById('ps_'+pos.id)?.value;if(v)priorities[pos.id]=parseInt(v);});
+
+  if(editPid){
+    const p=team.roster.find(r=>r.id===editPid);
+    if(p){p.name=name||p.name;p.jersey=jersey||p.jersey;p.primaryPos=primaryPos;p.priorities=priorities;}
+  } else {
+    if(!name){alert('Name required.');return;}
+    team.roster.push({id:uid(),name,jersey:jersey||String(subN++),primaryPos:primaryPos||'Player',isSub:false,priorities});
+  }
+  persist(); closeModals(); renderAll();
+}
+
+function deletePlayer(){
+  if(!confirm('Remove this player from the roster?')) return;
+  const team=activeTeam(); if(!team) return;
+  team.roster=team.roster.filter(p=>p.id!==editPid);
+  // remove from all games
+  team.games.forEach(g=>{
+    g.presentPlayers=g.presentPlayers.filter(id=>id!==editPid);
+    g.battingOrder=g.battingOrder.filter(id=>id!==editPid);
+    INNINGS.forEach(i=>ALL_POS.forEach(pos=>{if(g.lineup[i][pos.id]===editPid)g.lineup[i][pos.id]=null;}));
+  });
+  persist(); closeModals(); renderAll();
+}
+
+// ══════════════════════════════════════════════════════
+// NEW GAME
+// ══════════════════════════════════════════════════════
+function openNewGameModal(){
+  const games=activeGames();
+  document.getElementById('ngName').value='Game '+(games.length+1);
+  document.getElementById('ngDate').valueAsDate=new Date();
+  document.getElementById('ngOpp').value='';
+  document.getElementById('ngLoc').value='';
+  document.getElementById('mNewGame').style.display='flex';
+  setPage('lineup');
+}
+
+function createGame(){
+  const team=activeTeam(); if(!team) return;
+  const name=document.getElementById('ngName').value.trim()||'New Game';
+  const g=makeGame(name);
+  g.date=document.getElementById('ngDate').value;
+  g.opponent=document.getElementById('ngOpp').value.trim();
+  g.location=document.getElementById('ngLoc').value.trim();
+  const cur=activeGame();
+  g.presentPlayers=cur?[...cur.presentPlayers]:team.roster.filter(p=>!p.isSub).map(p=>p.id);
+  g.battingOrder=[...g.presentPlayers];
+  team.games.push(g);
+  activeGameId=g.id; currentInning=1;
+  persist(); closeModals(); renderAll();
+}
+
+// ══════════════════════════════════════════════════════
+// SEASON MODAL
+// ══════════════════════════════════════════════════════
+function openSeasonModal(){
+  renderSeasonList();
+  document.getElementById('mSeasons').style.display='flex';
+}
+function renderSeasonList(){
+  document.getElementById('seasonList').innerHTML=S.seasons.map(s=>`
+    <div class="mli ${s.id===S.activeSeasonId?'cur':''}">
+      <div class="mli-info">
+        <div class="mli-name">${s.name}</div>
+        <div class="mli-meta">${S.teams.filter(t=>t.seasonId===s.id).length} team(s)</div>
+      </div>
+      <button class="btn btn-outline btn-xs" onclick="switchSeason('${s.id}')">Select</button>
+      <button class="btn btn-red btn-xs" onclick="deleteSeason('${s.id}')">Delete</button>
+    </div>`).join('')||'<p style="font-size:11px;color:var(--gd)">No seasons yet.</p>';
+}
+function addSeason(){
+  const name=document.getElementById('newSeasonName').value.trim();if(!name) return;
+  const s={id:uid(),name};
+  S.seasons.push(s);
+  document.getElementById('newSeasonName').value='';
+  persist(); renderSeasonList(); renderSelectors();
+}
+function switchSeason(id){
+  S.activeSeasonId=id;
+  const t=S.teams.find(t=>t.seasonId===id);
+  S.activeTeamId=t?.id||null;
+  activeGameId=activeGames()[0]?.id||null;
+  persist(); renderSeasonList(); renderAll();
+}
+function deleteSeason(id){
+  if(!confirm('Delete this season and ALL its teams and games?')) return;
+  S.seasons=S.seasons.filter(s=>s.id!==id);
+  S.teams=S.teams.filter(t=>t.seasonId!==id);
+  if(S.activeSeasonId===id){S.activeSeasonId=S.seasons[0]?.id||null;S.activeTeamId=null;activeGameId=null;}
+  persist(); renderSeasonList(); renderAll();
+}
+
+// ══════════════════════════════════════════════════════
+// TEAM MODAL
+// ══════════════════════════════════════════════════════
+function openTeamModal(){
+  document.getElementById('mTeamsSub').textContent=`Teams in: ${activeSeason()?.name||'(no season selected)'}`;
+  renderTeamList();
+  document.getElementById('mTeams').style.display='flex';
+}
+function renderTeamList(){
+  const seasonTeams=S.teams.filter(t=>t.seasonId===S.activeSeasonId);
+  document.getElementById('teamList').innerHTML=seasonTeams.map(t=>`
+    <div class="mli ${t.id===S.activeTeamId?'cur':''}">
+      <div class="mli-info">
+        <div class="mli-name">${t.name}</div>
+        <div class="mli-meta">${t.roster.length} players · ${t.games.length} games</div>
+      </div>
+      <button class="btn btn-outline btn-xs" onclick="switchTeam('${t.id}')">Select</button>
+      <button class="btn btn-red btn-xs" onclick="deleteTeam('${t.id}')">Delete</button>
+    </div>`).join('')||'<p style="font-size:11px;color:var(--gd)">No teams in this season.</p>';
+}
+function addTeam(){
+  if(!S.activeSeasonId){alert('Select or create a season first.');return;}
+  const name=document.getElementById('newTeamName').value.trim();if(!name) return;
+  const team={id:uid(),seasonId:S.activeSeasonId,name,roster:[],games:[]};
+  S.teams.push(team);
+  document.getElementById('newTeamName').value='';
+  persist(); renderTeamList(); renderSelectors();
+}
+function switchTeam(id){
+  S.activeTeamId=id;
+  activeGameId=activeGames()[0]?.id||null;
+  persist(); renderTeamList(); renderAll();
+}
+function deleteTeam(id){
+  if(!confirm('Delete this team and all its games?')) return;
+  S.teams=S.teams.filter(t=>t.id!==id);
+  if(S.activeTeamId===id){S.activeTeamId=S.teams.find(t=>t.seasonId===S.activeSeasonId)?.id||null;activeGameId=null;}
+  persist(); renderTeamList(); renderAll();
+}
+
+// ══════════════════════════════════════════════════════
+// EXPORT / IMPORT
+// ══════════════════════════════════════════════════════
+function dl(content,type,filename){
+  const blob=new Blob([content],{type});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=filename;a.click();
+}
+function exportAll(){dl(JSON.stringify(S,null,2),'application/json','softball_data.json');}
+function doImport(){document.getElementById('importFile').click();}
+function handleImport(e){
+  const f=e.target.files[0];if(!f) return;
+  const r=new FileReader();
+  r.onload=ev=>{
+    try{
+      const d=JSON.parse(ev.target.result);
+      if(d.seasons&&d.teams){
+        S=d;
+        activeGameId=activeGames()[0]?.id||null;
+        persist();renderAll();
+        alert(`Imported: ${d.seasons.length} season(s), ${d.teams.length} team(s)`);
+      } else alert('Invalid format — must be an export from this app.');
+    }catch(err){alert('Parse error: '+err.message);}
+  };
+  r.readAsText(f);e.target.value='';
+}
+
+function exportCSVGame(){
+  const g=activeGame();const team=activeTeam();if(!g) return;
+  let csv=`Lineup — ${g.name}${g.opponent?' vs '+g.opponent:''} — ${g.date||'TBD'} — ${team?.name||''}\n\nBatting Order\n`;
+  g.battingOrder.filter(id=>g.presentPlayers.includes(id)).forEach((pid,i)=>{
+    const p=getP(pid);csv+=`${i+1},${p?.name||''},#${p?.jersey||''}\n`;
+  });
+  csv+='\nInning Assignments\nPosition,'+INNINGS.map(i=>'Inning '+i).join(',')+'\n';
+  ALL_POS.forEach(pos=>{
+    const row=[pos.label];
+    INNINGS.forEach(i=>{const pid=g.lineup[i][pos.id];row.push(pid?getP(pid)?.name||'':'');});
+    csv+=row.join(',')+'\n';
+  });
+  dl(csv,'text/csv',`Lineup_${(g.name||'game').replace(/\s+/g,'_')}.csv`);
+}
+
+// ══════════════════════════════════════════════════════
+// UTIL
+// ══════════════════════════════════════════════════════
+function closeModals(){
+  ['mPlayer','mNewGame','mSeasons','mTeams'].forEach(id=>document.getElementById(id).style.display='none');
+}
+document.querySelectorAll('.overlay').forEach(el=>el.addEventListener('click',e=>{if(e.target===el)closeModals();}));
+
+init();
+</script>
+</body>
+</html>
