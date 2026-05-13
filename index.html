@@ -214,8 +214,11 @@ header{background:var(--navy);color:#fff;padding:0 18px;display:flex;align-items
 .lgp-name{font-size:10px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
 .lgp-row-label{background:var(--navy);color:#fff;padding:6px 4px;border-radius:5px;font-size:11px;font-weight:700;text-align:center;display:flex;align-items:center;justify-content:center}
 .lgp-cell{padding:8px 4px;border-radius:5px;font-size:11px;font-weight:700;text-align:center;background:var(--gl);border:1px solid var(--gm);display:flex;align-items:center;justify-content:center;min-height:32px;min-width:0}
-.lgp-cell.field{background:#E8F5EC;border-color:#A9DFBF;color:#1E5C30}
-.lgp-cell.bench{background:#E8F0FB;border-color:#BDD7F0;color:#2a56a8}
+.lgp-cell.field{background:#E8F5EC;border-color:#A9DFBF;color:#1E5C30;cursor:grab}
+.lgp-cell.bench{background:#E8F0FB;border-color:#BDD7F0;color:#2a56a8;cursor:grab}
+.lgp-cell.field:active,.lgp-cell.bench:active{cursor:grabbing}
+.lgp-cell.dragging{opacity:.35}
+.lgp-cell.drop-hover{background:#DBEAFE!important;border-style:solid;border-color:#3B82F6}
 .lgp-cell.empty{color:var(--gd);font-weight:400}
 .lgp-empty{padding:20px;text-align:center;color:var(--gd);font-style:italic;font-size:12px}
 
@@ -539,7 +542,7 @@ header{background:var(--navy);color:#fff;padding:0 18px;display:flex;align-items
       <p>Two views are available, switched by the <strong>By Position / By Player</strong> toggle in the top toolbar:</p>
       <ul>
         <li><strong>By Position</strong> (default) — positions as columns, innings as rows. The interactive grid where you drag chips to assign players.</li>
-        <li><strong>By Player</strong> — players as columns, innings as rows. Each cell shows the position that player is in for that inning (read-only summary). Useful for printing or telling a player when/where they're playing.</li>
+        <li><strong>By Player</strong> — players as columns, innings as rows. Each cell shows the position that player is in for that inning. Drag a cell onto another player in the same inning row to swap their positions; the same rules (no consecutive bench, etc.) apply.</li>
       </ul>
       <p>In the default By Position view, the grid has columns for each position — 9 field slots (<code>P · C · 1B · 2B · 3B · SS · LF · CF · RF</code>) and 5 bench slots (<code>B1 – B5</code>) — and one row per inning. Each inning row contains:</p>
       <ul>
@@ -1234,7 +1237,14 @@ function byPlayerHTML(g){
       if(!posId){ cells.push('<div class="lgp-cell empty">—</div>'); return; }
       const pos=ALL_POS.find(p=>p.id===posId);
       const isBench=BENCH_POS.some(b=>b.id===posId);
-      cells.push(`<div class="lgp-cell ${isBench?'bench':'field'}" title="${pos.label}">${SHORT_POS[posId]}</div>`);
+      cells.push(`<div class="lgp-cell ${isBench?'bench':'field'}"
+        draggable="true"
+        title="${pos.label} — drag onto another player to swap positions"
+        ondragstart="dStart(event,'${pid}','${posId}',${inn})"
+        ondragend="dEnd(event)"
+        ondragover="dOver(event,'${posId}',${inn})"
+        ondragleave="dLeave(event)"
+        ondrop="dDrop(event,'${posId}',${inn})">${SHORT_POS[posId]}</div>`);
     });
   });
   return `<div class="lgrid-player-wrap"><div class="lgrid-player" style="grid-template-columns:${cols}">${cells.join('')}</div></div>`;
