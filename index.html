@@ -197,6 +197,7 @@ header{background:var(--navy);color:#fff;padding:0 18px;display:flex;align-items
 .slot.bench{background:#EEF3FF;border-color:#BDD7F0}
 .slot.warn{background:#FFF8E1;border-color:#E6A817}
 .slot.drop-hover{background:#DBEAFE!important;border-style:solid}
+.slot.drop-invalid{background:#FECACA!important;border-style:solid;border-color:#DC2626}
 .slot-empty{font-size:8px;color:var(--gd)}
 .slot-label{display:none}
 .slot .chip{max-width:100%;min-width:0;font-size:9px;padding:2px 4px 2px 3px;box-shadow:none;gap:2px}
@@ -219,6 +220,7 @@ header{background:var(--navy);color:#fff;padding:0 18px;display:flex;align-items
 .lgp-cell.field:active,.lgp-cell.bench:active{cursor:grabbing}
 .lgp-cell.dragging{opacity:.35}
 .lgp-cell.drop-hover{background:#DBEAFE!important;border-style:solid;border-color:#3B82F6}
+.lgp-cell.drop-invalid{background:#FECACA!important;border-style:solid;border-color:#DC2626;color:#7B241C}
 .lgp-cell.empty{color:var(--gd);font-weight:400}
 .lgp-empty{padding:20px;text-align:center;color:var(--gd);font-style:italic;font-size:12px}
 
@@ -1300,11 +1302,16 @@ function dEnd(e){e.target.classList.remove('dragging');drag=null;}
 function dOver(e,to,inn){
   e.preventDefault();
   if(drag&&drag.inn!==inn) return;
+  const isBench=BENCH_POS.some(b=>b.id===to);
+  if(drag&&ruleOn('consecBench')&&isBench&&to!=='pool'&&benchConsec(drag.pid,inn)){
+    e.currentTarget.classList.add('drop-invalid');
+    return;
+  }
   e.currentTarget.classList.add('drop-hover');
 }
-function dLeave(e){e.currentTarget.classList.remove('drop-hover');}
+function dLeave(e){e.currentTarget.classList.remove('drop-hover');e.currentTarget.classList.remove('drop-invalid');}
 function dDrop(e,to,inn){
-  e.preventDefault();e.currentTarget.classList.remove('drop-hover');
+  e.preventDefault();e.currentTarget.classList.remove('drop-hover');e.currentTarget.classList.remove('drop-invalid');
   if(!drag) return;
   const{pid,from,inn:fromInn}=drag;drag=null;
   if(fromInn!==inn) return;
