@@ -82,7 +82,8 @@ header{background:var(--navy);color:#fff;padding:0 18px;display:flex;align-items
 .pc-actions{display:flex;gap:5px}
 .pc-body{padding:10px 13px}
 .pc-prios{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
-.prio-cell{display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 3px;border-radius:5px;background:var(--gl);border:1px solid transparent;font-size:9px;text-align:center;line-height:1.2}
+.prio-cell{display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 3px;border-radius:5px;background:var(--gl);border:1px solid transparent;font-size:9px;text-align:center;line-height:1.2;cursor:pointer;user-select:none;transition:filter .1s}
+.prio-cell:hover{filter:brightness(.95)}
 .prio-cell.p1{background:#EAF6EE;border-color:#A9DFBF;color:#1E5C30}
 .prio-cell.p2{background:#FEF9E7;border-color:#FAD7A0;color:#7D4E00}
 .prio-cell.p3{background:#FDECEA;border-color:#F5A9A9;color:#7B241C}
@@ -201,11 +202,14 @@ header{background:var(--navy);color:#fff;padding:0 18px;display:flex;align-items
 /* rules panel */
 .rules-panel{background:#fff;border-radius:7px;box-shadow:0 1px 4px rgba(0,0,0,.06);padding:9px 12px;margin-top:8px}
 .rules-hdr{font-size:10px;font-weight:700;letter-spacing:.8px;color:var(--gd);text-transform:uppercase;margin-bottom:5px;padding-bottom:5px;border-bottom:1px solid var(--gl)}
-.rule-item{display:flex;gap:9px;padding:6px 0;align-items:flex-start;border-bottom:1px solid var(--gl)}
+.rule-item{display:flex;gap:8px;padding:6px 0;align-items:flex-start;border-bottom:1px solid var(--gl)}
 .rule-item:last-child{border-bottom:none;padding-bottom:0}
+.rule-toggle{margin-top:2px;width:14px;height:14px;accent-color:var(--green);cursor:pointer;flex-shrink:0}
 .rule-icon{flex-shrink:0;width:18px;text-align:center;font-size:13px;line-height:1.2;font-weight:700}
 .rule-item.ok .rule-icon{color:var(--green2)}
 .rule-item.warn .rule-icon{color:#B8860B}
+.rule-item.disabled{opacity:.5}
+.rule-item.disabled .rule-icon{color:var(--gm)}
 .rule-body{flex:1;min-width:0}
 .rule-title{font-size:11px;font-weight:700;color:var(--tx)}
 .rule-desc{font-size:10px;color:var(--gd);margin-top:1px;line-height:1.35}
@@ -606,12 +610,25 @@ function buildDefaultData(){
   S.activeTeamId=teamId;
 }
 
+const RULE_DEFAULTS={consecBench:true,fairBench:true,positionPriority:true,pcLock:true,infieldByDeadline:true};
+function ensureRulesDefaults(){
+  if(!S.rules) S.rules={};
+  Object.entries(RULE_DEFAULTS).forEach(([k,v])=>{if(S.rules[k]===undefined) S.rules[k]=v;});
+}
+function ruleOn(id){return S.rules?.[id]!==false;}
+function toggleRule(id){
+  if(!S.rules) S.rules={};
+  S.rules[id]=!ruleOn(id);
+  persist(); renderLineup(); renderVal();
+}
+
 async function init(){
   setSaveStatus('saving');
   const cloudOK=await loadStateCloud();
   if(!cloudOK) loadStateLocal();
   const isEmpty=!S.seasons||S.seasons.length===0;
   if(isEmpty) buildDefaultData();
+  ensureRulesDefaults();
   if(!S.activeSeasonId) S.activeSeasonId=S.seasons[0]?.id;
   if(!S.activeTeamId){
     const t=S.teams.find(t=>t.seasonId===S.activeSeasonId);
@@ -710,7 +727,7 @@ function playerCard(p){
     const v=(p.priorities||{})[pos.id];
     const cls=v?'p'+v:'p0';
     const lbl=v===1?'Best':v===2?'Good':v===3?'Can':'—';
-    return `<div class="prio-cell ${cls}">
+    return `<div class="prio-cell ${cls}" onclick="cyclePriority('${p.id}','${pos.id}')" title="Click to cycle: nothing → best → good → can">
       <div class="prio-dot ${cls}"></div>
       <div class="prio-lbl">${pos.label.split(' ')[0]}</div>
       <div class="prio-val">${lbl}</div>
@@ -733,6 +750,18 @@ function playerCard(p){
       <div class="pc-prios">${prios}</div>
     </div>
   </div>`;
+}
+
+function cyclePriority(pid,posId){
+  const team=activeTeam(); if(!team) return;
+  const p=team.roster.find(r=>r.id===pid); if(!p) return;
+  if(!p.priorities) p.priorities={};
+  const cur=p.priorities[posId];
+  if(cur===1) p.priorities[posId]=2;
+  else if(cur===2) p.priorities[posId]=3;
+  else if(cur===3) delete p.priorities[posId];
+  else p.priorities[posId]=1;
+  persist(); renderRosterPage();
 }
 
 function exportCSVRoster(){
@@ -979,7 +1008,7 @@ function dDrop(e,to,inn){
   if(fromInn!==inn) return;
   const g=activeGame();if(!g) return;
   const isBench=BENCH_POS.some(b=>b.id===to);
-  if(isBench&&to!=='pool'&&benchConsec(pid,inn)){
+  if(ruleOn('consecBench')&&isBench&&to!=='pool'&&benchConsec(pid,inn)){
     flashWarn(getP(pid)?.name+' cannot bench 2 consecutive innings!');return;
   }
   const occ=to!=='pool'?g.lineup[inn][to]:null;
@@ -991,18 +1020,22 @@ function dDrop(e,to,inn){
 // ══════════════════════════════════════════════════════
 // AUTO-POPULATE
 // ══════════════════════════════════════════════════════
-function score(p,posId){const v=(p.priorities||{})[posId];return v===1?100:v===2?60:v===3?30:5;}
+function score(p,posId){
+  if(!ruleOn('positionPriority')) return 50;
+  const v=(p.priorities||{})[posId];return v===1?100:v===2?60:v===3?30:5;
+}
 
 function autoInning(inn){
   const g=activeGame(); if(!g) return;
 
-  // Lock: preserve pitcher/catcher if already filled with a present player.
+  // Rule 4: preserve pitcher/catcher if already filled (gated by pcLock rule).
   const locked={};
-  AUTO_LOCK.forEach(posId=>{
-    const pid=g.lineup[inn][posId];
-    if(pid&&g.presentPlayers.includes(pid)) locked[posId]=pid;
-  });
-  // Clear non-locked slots.
+  if(ruleOn('pcLock')){
+    AUTO_LOCK.forEach(posId=>{
+      const pid=g.lineup[inn][posId];
+      if(pid&&g.presentPlayers.includes(pid)) locked[posId]=pid;
+    });
+  }
   ALL_POS.forEach(pos=>{ if(!locked[pos.id]) g.lineup[inn][pos.id]=null; });
 
   const lockedPids=new Set(Object.values(locked));
@@ -1010,24 +1043,26 @@ function autoInning(inn){
   const fieldSlots=FIELD_POS.map(p=>p.id).filter(id=>!locked[id]);
   const benchSlots=[...BENCH_POS.map(p=>p.id)];
 
-  // Tier inputs
+  // Rule 1 (consecBench): players benched last inning must play this one.
   const mustPlay=new Set();
-  if(inn>1) BENCH_POS.forEach(b=>{const p=g.lineup[inn-1][b.id];if(p&&rem.has(p))mustPlay.add(p);});
+  if(ruleOn('consecBench')&&inn>1) BENCH_POS.forEach(b=>{const p=g.lineup[inn-1][b.id];if(p&&rem.has(p))mustPlay.add(p);});
+
+  // Rule 2 (fairBench): players who've benched more than the min go before others.
   const counts=benchCounts(g,inn);
   const minBench=counts.size?Math.min(...counts.values()):0;
   const overBench=new Set();
-  rem.forEach(pid=>{if(!mustPlay.has(pid)&&(counts.get(pid)??0)>minBench) overBench.add(pid);});
+  if(ruleOn('fairBench')) rem.forEach(pid=>{if(!mustPlay.has(pid)&&(counts.get(pid)??0)>minBench) overBench.add(pid);});
 
-  // Track who's already played infield/P/C in some other inning in the
-  // deadline window (or is locked into one this inning, if this inning is
-  // inside the window).
-  const inDeadline=inn<=INFIELD_DEADLINE;
+  // Rule 5 (infieldByDeadline): bias toward giving infield/P/C in innings 1..deadline.
+  const inDeadline=ruleOn('infieldByDeadline')&&inn<=INFIELD_DEADLINE;
   const playedInfield=new Set();
-  INNINGS.forEach(other=>{
-    if(other===inn||other>INFIELD_DEADLINE) return;
-    INFIELD_PC.forEach(posId=>{const pid=g.lineup[other][posId];if(pid) playedInfield.add(pid);});
-  });
-  if(inDeadline) Object.entries(locked).forEach(([posId,pid])=>{ if(INFIELD_PC.includes(posId)) playedInfield.add(pid); });
+  if(ruleOn('infieldByDeadline')){
+    INNINGS.forEach(other=>{
+      if(other===inn||other>INFIELD_DEADLINE) return;
+      INFIELD_PC.forEach(posId=>{const pid=g.lineup[other][posId];if(pid) playedInfield.add(pid);});
+    });
+    if(inDeadline) Object.entries(locked).forEach(([posId,pid])=>{ if(INFIELD_PC.includes(posId)) playedInfield.add(pid); });
+  }
 
   const res={};
   function assignTier(tier){
@@ -1131,23 +1166,28 @@ function evaluateRules(g){
     .map(pid=>getP(pid)?.name).filter(Boolean);
 
   return [
-    {title:'No consecutive bench',
+    {id:'consecBench',
+     title:'No consecutive bench',
      desc:'A player cannot be on the bench two innings in a row. Enforced when dragging onto a bench slot.',
      ok:r1.length===0,
      detail:r1.length?r1.join('; '):''},
-    {title:'Fair bench distribution',
+    {id:'fairBench',
+     title:'Fair bench distribution',
      desc:'Everyone should bench once before anyone benches twice. Auto-populate biases toward players who have benched fewer times.',
      ok:!uneven,
      detail:r2Detail},
-    {title:'Position priorities considered',
+    {id:'positionPriority',
+     title:'Position priorities considered',
      desc:'Auto-populate ranks each player–position pairing by their stored priority: 1 = best fit (100), 2 = capable (60), 3 = can play (30), no priority = 5. Higher scores win the slot.',
      ok:true,
      detail:''},
-    {title:'Pitcher & catcher locked',
+    {id:'pcLock',
+     title:'Pitcher & catcher locked',
      desc:'Auto-populate preserves Pitcher and Catcher when they already have a player assigned — only the other positions are reshuffled.',
      ok:true,
      detail:''},
-    {title:`Infield, pitcher, or catcher in the first ${INFIELD_DEADLINE} innings`,
+    {id:'infieldByDeadline',
+     title:`Infield, pitcher, or catcher in the first ${INFIELD_DEADLINE} innings`,
      desc:`Every present player must be in pitcher, catcher, 1B, 2B, 3B, or shortstop in at least one of innings 1–${INFIELD_DEADLINE}. Auto-populate boosts placing players who haven\'t had an early infield inning yet.`,
      ok:r5Missing.length===0,
      detail:r5Missing.length?`No early infield/P/C inning: ${r5Missing.join(', ')}`:''},
@@ -1158,14 +1198,20 @@ function rulesPanelHTML(g){
   const rules=evaluateRules(g);
   return `<div class="rules-panel">
     <div class="rules-hdr">Rules Applied</div>
-    ${rules.map(r=>`<div class="rule-item ${r.ok?'ok':'warn'}">
-      <div class="rule-icon">${r.ok?'✓':'⚠'}</div>
-      <div class="rule-body">
-        <div class="rule-title">${r.title}</div>
-        <div class="rule-desc">${r.desc}</div>
-        ${r.detail?`<div class="rule-detail">${r.detail}</div>`:''}
-      </div>
-    </div>`).join('')}
+    ${rules.map(r=>{
+      const on=ruleOn(r.id);
+      const stateCls=!on?'disabled':(r.ok?'ok':'warn');
+      const icon=!on?'·':(r.ok?'✓':'⚠');
+      return `<div class="rule-item ${stateCls}">
+        <input type="checkbox" class="rule-toggle" ${on?'checked':''} onchange="toggleRule('${r.id}')" title="Toggle rule">
+        <div class="rule-icon">${icon}</div>
+        <div class="rule-body">
+          <div class="rule-title">${r.title}</div>
+          <div class="rule-desc">${r.desc}</div>
+          ${on&&r.detail?`<div class="rule-detail">${r.detail}</div>`:''}
+        </div>
+      </div>`;
+    }).join('')}
   </div>`;
 }
 
@@ -1177,25 +1223,29 @@ function renderVal(){
     const asgn=assigned(inn);
     const unasn=g.presentPlayers.filter(id=>!asgn.has(id));
     if(unasn.length) msgs.push({t:'error',inn,txt:`Inning ${inn}: ${unasn.map(id=>getP(id)?.name).filter(Boolean).join(', ')} not assigned`});
-    BENCH_POS.forEach(b=>{
+    if(ruleOn('consecBench')) BENCH_POS.forEach(b=>{
       const pid=g.lineup[inn][b.id];
       if(pid&&benchConsec(pid,inn)) msgs.push({t:'error',inn,txt:`Inning ${inn}: ${getP(pid)?.name} benched 2 consecutive innings`});
     });
     const empty=FIELD_POS.filter(pos=>!g.lineup[inn][pos.id]);
     if(empty.length&&asgn.size>0) msgs.push({t:'warn',inn,txt:`Inning ${inn}: Empty — ${empty.map(p=>p.label).join(', ')}`});
   });
-  const counts=benchCounts(g);
-  const vals=Array.from(counts.values());
-  if(vals.length){
-    const minB=Math.min(...vals),maxB=Math.max(...vals);
-    if(maxB-minB>1){
-      msgs.push({t:'warn',inn:0,txt:`Bench imbalance: someone has benched ${maxB}× while others have benched ${minB}×`});
+  if(ruleOn('fairBench')){
+    const counts=benchCounts(g);
+    const vals=Array.from(counts.values());
+    if(vals.length){
+      const minB=Math.min(...vals),maxB=Math.max(...vals);
+      if(maxB-minB>1){
+        msgs.push({t:'warn',inn:0,txt:`Bench imbalance: someone has benched ${maxB}× while others have benched ${minB}×`});
+      }
     }
   }
-  const ifSet=new Set(),anywhereEarly=new Set();
-  INNINGS.forEach(inn=>{if(inn>INFIELD_DEADLINE)return;ALL_POS.forEach(pos=>{const pid=g.lineup[inn][pos.id];if(!pid)return;anywhereEarly.add(pid);if(INFIELD_PC.includes(pos.id))ifSet.add(pid);});});
-  const missing=g.presentPlayers.filter(pid=>anywhereEarly.has(pid)&&!ifSet.has(pid)).map(pid=>getP(pid)?.name).filter(Boolean);
-  if(missing.length) msgs.push({t:'warn',inn:0,txt:`No early infield/P/C inning (by inn ${INFIELD_DEADLINE}): ${missing.join(', ')}`});
+  if(ruleOn('infieldByDeadline')){
+    const ifSet=new Set(),anywhereEarly=new Set();
+    INNINGS.forEach(inn=>{if(inn>INFIELD_DEADLINE)return;ALL_POS.forEach(pos=>{const pid=g.lineup[inn][pos.id];if(!pid)return;anywhereEarly.add(pid);if(INFIELD_PC.includes(pos.id))ifSet.add(pid);});});
+    const missing=g.presentPlayers.filter(pid=>anywhereEarly.has(pid)&&!ifSet.has(pid)).map(pid=>getP(pid)?.name).filter(Boolean);
+    if(missing.length) msgs.push({t:'warn',inn:0,txt:`No early infield/P/C inning (by inn ${INFIELD_DEADLINE}): ${missing.join(', ')}`});
+  }
   if(!msgs.length){el.innerHTML='<div class="vm ok">✅ All innings valid</div>';return;}
   msgs.sort((a,b)=>a.inn-b.inn);
   el.innerHTML=msgs.slice(0,4).map(m=>`<div class="vm ${m.t}">${m.t==='error'?'⛔':'⚠️'} ${m.txt}</div>`).join('');
