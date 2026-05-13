@@ -1315,6 +1315,28 @@ function autoInning(inn){
   // Bench overflow
   let bi=0;
   rem.forEach(pid=>{if(bi<benchSlots.length) res[benchSlots[bi++]]=pid;});
+
+  // Rule 2 correction: if any player ended up on the bench with a higher
+  // prior bench count than someone currently fielded, swap them. The tier
+  // algorithm above is greedy and can leak a high-count player to the bench
+  // when overBench overflows its tier's slot allocation; this fixes that.
+  if(ruleOn('fairBench')){
+    const benched=[],fielded=[];
+    Object.entries(res).forEach(([pos,pid])=>{
+      if(mustPlay.has(pid)||lockedPids.has(pid)) return;
+      const cnt=counts.get(pid)??0;
+      if(BENCH_POS.some(b=>b.id===pos)) benched.push({pos,pid,cnt});
+      else fielded.push({pos,pid,cnt});
+    });
+    benched.sort((a,b)=>b.cnt-a.cnt);     // highest prior-bench count first
+    fielded.sort((a,b)=>a.cnt-b.cnt);     // lowest prior-bench count first
+    while(benched.length&&fielded.length&&benched[0].cnt>fielded[0].cnt){
+      const b=benched.shift(),f=fielded.shift();
+      res[b.pos]=f.pid;
+      res[f.pos]=b.pid;
+    }
+  }
+
   Object.entries(res).forEach(([pos,pid])=>{g.lineup[inn][pos]=pid;});
   persist();renderLineup();renderVal();
 }
