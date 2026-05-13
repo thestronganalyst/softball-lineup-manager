@@ -132,6 +132,11 @@ header{background:var(--navy);color:#fff;padding:0 18px;display:flex;align-items
 /* lineup grid toolbar */
 .lgrid-toolbar{display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap}
 .lgrid-toolbar .auto-all{margin-left:auto;display:flex;gap:5px}
+.view-toggle{display:inline-flex;border:1px solid var(--gm);border-radius:5px;overflow:hidden}
+.view-toggle .vbtn{background:#fff;color:var(--txm);border:none;padding:5px 11px;font-size:11px;font-weight:600;cursor:pointer;transition:.12s;border-right:1px solid var(--gm)}
+.view-toggle .vbtn:last-child{border-right:none}
+.view-toggle .vbtn:hover:not(.active){background:var(--gl)}
+.view-toggle .vbtn.active{background:var(--navy);color:#fff}
 
 /* val bar */
 .vbar{padding:0 13px 4px;flex-shrink:0}
@@ -161,7 +166,7 @@ header{background:var(--navy);color:#fff;padding:0 18px;display:flex;align-items
 
 /* right: field grid */
 .lfield{flex:1;display:flex;flex-direction:column;overflow:hidden}
-.lscroll{flex:1;overflow-y:auto;padding:0 12px 12px}
+.lscroll{flex:1;overflow:auto;padding:0 12px 12px}
 
 /* crosstab lineup grid */
 .lgrid{display:flex;flex-direction:column;gap:6px}
@@ -199,6 +204,20 @@ header{background:var(--navy);color:#fff;padding:0 18px;display:flex;align-items
 .slot .chip .cn-name{overflow:hidden;text-overflow:ellipsis;min-width:0}
 .slot .chip .cx{font-size:10px}
 .inning-pool .chip{font-size:10px}
+
+/* by-player view */
+.lgrid-player-wrap{overflow-x:auto;padding-bottom:4px}
+.lgrid-player{display:grid;gap:3px;align-items:stretch;padding-bottom:8px;min-width:max-content}
+.lgp-corner{}
+.lgp-header{background:var(--navy);color:#fff;padding:5px 4px;border-radius:5px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:0;min-width:0}
+.lgp-jersey{font-size:9px;opacity:.7;font-weight:700}
+.lgp-name{font-size:10px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+.lgp-row-label{background:var(--navy);color:#fff;padding:6px 4px;border-radius:5px;font-size:11px;font-weight:700;text-align:center;display:flex;align-items:center;justify-content:center}
+.lgp-cell{padding:8px 4px;border-radius:5px;font-size:11px;font-weight:700;text-align:center;background:var(--gl);border:1px solid var(--gm);display:flex;align-items:center;justify-content:center;min-height:32px;min-width:0}
+.lgp-cell.field{background:#E8F5EC;border-color:#A9DFBF;color:#1E5C30}
+.lgp-cell.bench{background:#E8F0FB;border-color:#BDD7F0;color:#2a56a8}
+.lgp-cell.empty{color:var(--gd);font-weight:400}
+.lgp-empty{padding:20px;text-align:center;color:var(--gd);font-style:italic;font-size:12px}
 
 /* rules panel */
 .rules-panel{background:#fff;border-radius:7px;box-shadow:0 1px 4px rgba(0,0,0,.06);padding:9px 12px;margin-top:8px}
@@ -517,7 +536,12 @@ header{background:var(--navy);color:#fff;padding:0 18px;display:flex;align-items
       </ul>
 
       <h3>The crosstab grid</h3>
-      <p>The grid has columns for each position — 9 field slots (<code>P · C · 1B · 2B · 3B · SS · LF · CF · RF</code>) and 5 bench slots (<code>B1 – B5</code>) — and one row per inning. Each inning row contains:</p>
+      <p>Two views are available, switched by the <strong>By Position / By Player</strong> toggle in the top toolbar:</p>
+      <ul>
+        <li><strong>By Position</strong> (default) — positions as columns, innings as rows. The interactive grid where you drag chips to assign players.</li>
+        <li><strong>By Player</strong> — players as columns, innings as rows. Each cell shows the position that player is in for that inning (read-only summary). Useful for printing or telling a player when/where they're playing.</li>
+      </ul>
+      <p>In the default By Position view, the grid has columns for each position — 9 field slots (<code>P · C · 1B · 2B · 3B · SS · LF · CF · RF</code>) and 5 bench slots (<code>B1 – B5</code>) — and one row per inning. Each inning row contains:</p>
       <ul>
         <li>A navy strip on the left with the inning number and a per-inning <strong>⚡ Auto</strong> button.</li>
         <li>A <strong>Pool</strong> row above the slots, showing players who haven't been assigned anywhere yet in that inning.</li>
@@ -706,6 +730,7 @@ const SK='softball_v5';
 let S={seasons:[],teams:[],activeSeasonId:null,activeTeamId:null};
 let currentPage='roster';
 let drag=null;
+let lineupView='position'; // 'position' (default crosstab) or 'player' (player columns)
 let editPid=null;
 let subN=30;
 
@@ -1055,9 +1080,18 @@ function renderToolbar(){
   const el=document.getElementById('lineupToolbar');
   if(!el) return;
   if(!activeGame()){el.innerHTML='';return;}
-  el.innerHTML=`<div class="auto-all">
+  el.innerHTML=`<div class="view-toggle">
+    <button class="vbtn ${lineupView==='position'?'active':''}" onclick="setLineupView('position')">⊞ By Position</button>
+    <button class="vbtn ${lineupView==='player'?'active':''}" onclick="setLineupView('player')">👤 By Player</button>
+  </div>
+  <div class="auto-all">
     <button class="btn btn-navy btn-sm" onclick="autoAll()">⚡⚡ Auto All Innings</button>
   </div>`;
+}
+function setLineupView(mode){
+  lineupView=mode;
+  renderToolbar();
+  renderLineup();
 }
 
 // ══════════════════════════════════════════════════════
@@ -1135,7 +1169,11 @@ function renderLineup(){
   if(!el) return;
   const g=activeGame();
   if(!g){el.innerHTML='';return;}
+  const main=lineupView==='player'?byPlayerHTML(g):byPositionHTML(g);
+  el.innerHTML=main+rulesPanelHTML(g);
+}
 
+function byPositionHTML(g){
   const headFields=FIELD_POS.map(pos=>`<div class="hc f" title="${pos.label}">${SHORT_POS[pos.id]}</div>`).join('');
   const headBench=BENCH_POS.map(pos=>`<div class="hc b" title="${pos.label}">${SHORT_POS[pos.id]}</div>`).join('');
   const header=`<div class="lgrid-headrow">
@@ -1168,7 +1206,38 @@ function renderLineup(){
     </div>`;
   }).join('');
 
-  el.innerHTML=header+blocks+rulesPanelHTML(g);
+  return header+blocks;
+}
+
+function byPlayerHTML(g){
+  // Player order: batting order first, then any remaining present players (subs added later, etc.)
+  const ordered=[];
+  g.battingOrder.forEach(pid=>{if(g.presentPlayers.includes(pid)&&getP(pid)) ordered.push(pid);});
+  g.presentPlayers.forEach(pid=>{if(!ordered.includes(pid)&&getP(pid)) ordered.push(pid);});
+  if(!ordered.length) return '<div class="lgp-empty">No present players. Check players in the Present section.</div>';
+
+  const cols=`64px repeat(${ordered.length},minmax(64px,1fr))`;
+  const cells=['<div class="lgp-corner"></div>'];
+  ordered.forEach(pid=>{
+    const p=getP(pid);
+    const first=(p.name||'').split(' ')[0];
+    cells.push(`<div class="lgp-header" title="${p.name}">
+      <div class="lgp-jersey">#${p.jersey}</div>
+      <div class="lgp-name">${first}</div>
+    </div>`);
+  });
+  INNINGS.forEach(inn=>{
+    cells.push(`<div class="lgp-row-label">Inn ${inn}</div>`);
+    ordered.forEach(pid=>{
+      let posId=null;
+      for(const pos of ALL_POS){ if(g.lineup[inn][pos.id]===pid){ posId=pos.id; break; } }
+      if(!posId){ cells.push('<div class="lgp-cell empty">—</div>'); return; }
+      const pos=ALL_POS.find(p=>p.id===posId);
+      const isBench=BENCH_POS.some(b=>b.id===posId);
+      cells.push(`<div class="lgp-cell ${isBench?'bench':'field'}" title="${pos.label}">${SHORT_POS[posId]}</div>`);
+    });
+  });
+  return `<div class="lgrid-player-wrap"><div class="lgrid-player" style="grid-template-columns:${cols}">${cells.join('')}</div></div>`;
 }
 
 function assigned(inn){
