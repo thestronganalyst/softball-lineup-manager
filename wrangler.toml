@@ -1,0 +1,7 @@
+name = "softball-lineup-manager"
+compatibility_date = "2025-05-01"
+pages_build_output_dir = "."
+
+[[r2_buckets]]
+binding = "DATA_BUCKET"
+bucket_name = "softball-data"

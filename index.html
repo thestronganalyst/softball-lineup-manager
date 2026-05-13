@@ -41,6 +41,12 @@ header{background:var(--navy);color:#fff;padding:0 18px;display:flex;align-items
 .btn-outline{background:#fff;border:1.5px solid var(--gm);color:var(--tx)}.btn-outline:hover{background:var(--gl)}
 .btn-sm{padding:4px 10px;font-size:10px}
 .btn-xs{padding:2px 7px;font-size:10px}
+.save-status{font-size:14px;line-height:1;padding:0 8px 0 2px;user-select:none;transition:color .2s}
+.save-status.saved{color:#7DD181}
+.save-status.saving{color:var(--gold);animation:pulse 1s ease-in-out infinite}
+.save-status.error{color:#FF8A80}
+.save-status.offline{color:rgba(255,255,255,.4)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 
 /* ── nav tabs (page switcher) ── */
 .page-nav{background:var(--navy2);display:flex;align-items:center;padding:0 18px;gap:2px;flex-shrink:0;height:36px;border-bottom:2px solid var(--navy3)}
@@ -249,6 +255,7 @@ header{background:var(--navy);color:#fff;padding:0 18px;display:flex;align-items
     <select class="ctx-sel" id="teamSel" onchange="onTeamChange()"></select>
   </div>
   <div class="hdr-r">
+    <span id="saveStatus" class="save-status" title="Cloud save status">●</span>
     <button class="btn btn-ghost btn-sm" onclick="doImport()">⬆ Import</button>
     <button class="btn btn-ghost btn-sm" onclick="exportAll()">⬇ Export JSON</button>
     <button class="btn btn-ghost btn-sm" onclick="window.print()">🖨 Print</button>
@@ -464,9 +471,77 @@ let drag=null;
 let editPid=null;
 let subN=30;
 
-// ── helpers ──
-const persist=()=>{try{localStorage.setItem(SK,JSON.stringify(S));}catch(e){}};
-const loadState=()=>{try{const r=localStorage.getItem(SK);if(r)S=JSON.parse(r);}catch(e){}};
+// ── persistence ──
+// Cloud-backed: /api/data (R2 via Pages Function). localStorage = offline cache.
+// persist() is fire-and-forget: writes cache immediately, debounces a PUT.
+const API='/api/data';
+const SAVE_DEBOUNCE_MS=800;
+let saveTimer=null;
+let saveInFlight=null;
+let pendingDirty=false;
+
+function setSaveStatus(state){
+  const el=document.getElementById('saveStatus');
+  if(!el) return;
+  el.className='save-status '+state;
+  el.title={saving:'Saving to cloud…',saved:'Saved to cloud',error:'Cloud save failed — changes kept locally',offline:'Offline — changes kept locally',idle:''}[state]||'';
+}
+
+const persist=()=>{
+  try{localStorage.setItem(SK,JSON.stringify(S));}catch(e){}
+  pendingDirty=true;
+  if(saveTimer) clearTimeout(saveTimer);
+  setSaveStatus('saving');
+  saveTimer=setTimeout(pushToCloud,SAVE_DEBOUNCE_MS);
+};
+
+async function pushToCloud(){
+  saveTimer=null;
+  if(saveInFlight){ await saveInFlight; }
+  if(!pendingDirty) return;
+  pendingDirty=false;
+  const body=JSON.stringify(S);
+  saveInFlight=(async()=>{
+    try{
+      const r=await fetch(API,{method:'PUT',headers:{'content-type':'application/json'},body});
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      setSaveStatus(pendingDirty?'saving':'saved');
+    }catch(e){
+      setSaveStatus('error');
+    }finally{
+      saveInFlight=null;
+    }
+  })();
+  await saveInFlight;
+  if(pendingDirty) pushToCloud();
+}
+
+async function loadStateCloud(){
+  try{
+    const r=await fetch(API,{cache:'no-store'});
+    if(!r.ok) return false;
+    const data=await r.json();
+    if(data&&Array.isArray(data.seasons)&&data.seasons.length){
+      S=data;
+      try{localStorage.setItem(SK,JSON.stringify(S));}catch(e){}
+      return true;
+    }
+  }catch(e){}
+  return false;
+}
+function loadStateLocal(){
+  try{const r=localStorage.getItem(SK);if(r){const p=JSON.parse(r);if(p&&Array.isArray(p.seasons))S=p;}}catch(e){}
+}
+
+// Flush in-flight edits when the tab closes (keepalive lets the request finish post-unload).
+window.addEventListener('beforeunload',()=>{
+  if(!pendingDirty&&!saveTimer) return;
+  if(saveTimer){clearTimeout(saveTimer);saveTimer=null;}
+  try{
+    fetch(API,{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify(S),keepalive:true});
+  }catch(e){}
+});
+
 const uid=()=>'id_'+Date.now()+'_'+Math.random().toString(36).slice(2,6);
 
 const activeSeason=()=>S.seasons.find(s=>s.id===S.activeSeasonId)||null;
@@ -519,9 +594,12 @@ function buildDefaultData(){
   S.activeTeamId=teamId;
 }
 
-function init(){
-  loadState();
-  if(!S.seasons||S.seasons.length===0) buildDefaultData();
+async function init(){
+  setSaveStatus('saving');
+  const cloudOK=await loadStateCloud();
+  if(!cloudOK) loadStateLocal();
+  const isEmpty=!S.seasons||S.seasons.length===0;
+  if(isEmpty) buildDefaultData();
   if(!S.activeSeasonId) S.activeSeasonId=S.seasons[0]?.id;
   if(!S.activeTeamId){
     const t=S.teams.find(t=>t.seasonId===S.activeSeasonId);
@@ -529,8 +607,16 @@ function init(){
   }
   const games=activeGames();
   if(games.length>0&&!activeGameId) activeGameId=games[0].id;
-  persist();
   renderAll();
+  // If cloud was empty but we built defaults, push them up so other devices see them.
+  // If cloud was reachable and had data, just mark saved.
+  if(cloudOK&&!isEmpty){
+    setSaveStatus('saved');
+  } else if(!cloudOK){
+    setSaveStatus('offline');
+  } else {
+    persist(); // cloud reachable but empty → seed it
+  }
 }
 
 // ══════════════════════════════════════════════════════
