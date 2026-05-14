@@ -1285,13 +1285,22 @@ function trAppend(...events){
   const g=activeGame(); if(!g) return;
   const t=ensureTracking(g);
   events.forEach(e=>t.events.push(e));
+  // Auto-end the half-inning at 3 outs. Marked auto:true so Undo can unwind
+  // the user's action and this together as a single step.
+  const d=deriveTracking(g);
+  if(!d.gameOver && d.outs>=3){
+    t.events.push({kind:'half-end',auto:true});
+  }
   persist(); renderGameTracker();
 }
 function trUndo(){
   const g=activeGame(); if(!g) return;
   const t=ensureTracking(g);
   if(!t.events.length) return;
-  t.events.pop();
+  const last=t.events.pop();
+  if(last && last.kind==='half-end' && last.auto && t.events.length){
+    t.events.pop();
+  }
   persist(); renderGameTracker();
 }
 function trPitch(call){
@@ -1488,7 +1497,7 @@ function renderGameTracker(){
         }
         if(e.kind==='them-run') return `<div class="gt-log-row"><span class="gt-log-tag run">RUN</span> ${themName} scored</div>`;
         if(e.kind==='them-out') return `<div class="gt-log-row"><span class="gt-log-tag out">OUT</span> ${themName} out recorded</div>`;
-        if(e.kind==='half-end') return `<div class="gt-log-row"><span class="gt-log-tag half">HALF</span> Half-inning ended</div>`;
+        if(e.kind==='half-end') return `<div class="gt-log-row"><span class="gt-log-tag half">HALF</span> Half-inning ended${e.auto?' (3 outs)':''}</div>`;
         return '';
       }).join(''):'<div class="gt-log-row gt-log-empty">No events yet.</div>'}
     </div>`;
