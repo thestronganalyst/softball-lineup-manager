@@ -812,13 +812,17 @@ const SK='softball_v5';
 // game:   {id, name, date, opponent, location, presentPlayers:[], battingOrder:[], lineup:{inn:{posId:pid|null}},
 //          tracking?:{ events:[event] }}
 // event:  one of
-//   {kind:'pitch',  call:'B'|'S'|'F'}                          // a pitch during our half-inning
-//   {kind:'pa-end', batterId, outcome:'1B'|'2B'|'3B'|'HR'|'BB'|'K'|'GO'|'FO'}
-//   {kind:'them-run'}                                          // opponent scored
-//   {kind:'them-out'}                                          // opponent recorded out
-//   {kind:'half-end'}                                          // half-inning ended (advances inning when their-half ends)
-// Derived state (score, inning, half, outs, current batter, count) is computed by deriveTracking()
-// from the event log — events are the source of truth, nothing else needs persisting.
+//   {kind:'pitch',       call:'B'|'S'|'F'}                          // a pitch during our half-inning
+//   {kind:'pa-end',      batterId, outcome:'1B'|'2B'|'3B'|'HR'|'BB'|'K'|'GO'|'FO'}
+//   {kind:'runner-move', from:1|2|3, action:'advance'|'score'|'out', runnerId}
+//   {kind:'steal-safe',  from:1|2|3, runnerId}                       // stolen base
+//   {kind:'steal-out',   from:1|2|3, runnerId}                       // caught stealing
+//   {kind:'them-run'}                                                // opponent scored
+//   {kind:'them-out'}                                                // opponent recorded out
+//   {kind:'half-end'}                                                // half-inning ended (advances inning when their-half ends)
+// Derived state (score, inning, half, outs, bases, current batter, count) is computed by
+// deriveTracking() from the event log — events are the source of truth, nothing else needs
+// persisting.
 // ══════════════════════════════════════════════════════
 let S={seasons:[],teams:[],activeSeasonId:null,activeTeamId:null};
 let currentPage='roster';
@@ -1249,6 +1253,17 @@ function deriveTracking(g){
       if(e.action==='score'){ usScore++; bases[from]=null; }
       else if(e.action==='out'){ outs++; bases[from]=null; }
       else if(e.action==='advance'){ cascadeAdvance(from); }
+    } else if(e.kind==='steal-safe'){
+      const from=e.from;
+      if(!bases[from]) continue;
+      const dest=from+1;
+      if(dest>=4){ usScore++; bases[from]=null; }
+      else if(!bases[dest]){ bases[dest]=bases[from]; bases[from]=null; }
+    } else if(e.kind==='steal-out'){
+      const from=e.from;
+      if(!bases[from]) continue;
+      outs++;
+      bases[from]=null;
     } else if(e.kind==='them-run'){
       themScore++;
     } else if(e.kind==='them-out'){
@@ -1324,6 +1339,14 @@ function trRunner(from,action){
   if(!runnerId) return;
   trAppend({kind:'runner-move',from,action,runnerId});
 }
+function trSteal(from,result){
+  const g=activeGame(); if(!g) return;
+  const d=deriveTracking(g);
+  if(d.gameOver||d.half!=='us') return;
+  const runnerId=d.bases[from];
+  if(!runnerId) return;
+  trAppend({kind:result==='safe'?'steal-safe':'steal-out',from,runnerId});
+}
 
 function renderGameTracker(){
   const el=document.getElementById('gameTrack');
@@ -1373,6 +1396,8 @@ function renderGameTracker(){
           <button class="btn btn-outline btn-xs" onclick="trRunner(${b},'advance')">${advLbl}</button>
           ${b<3?`<button class="btn btn-navy btn-xs" onclick="trRunner(${b},'score')">→ Home</button>`:''}
           <button class="btn btn-red btn-xs" onclick="trRunner(${b},'out')">Out</button>
+          <button class="btn btn-gold btn-xs" onclick="trSteal(${b},'safe')" title="Stolen base">🏃 SB</button>
+          <button class="btn btn-red btn-xs" onclick="trSteal(${b},'out')" title="Caught stealing">🏃 CS</button>
         </div>`;
       }).join('')}
     </div>`:'';
@@ -1451,6 +1476,15 @@ function renderGameTracker(){
           const p=e.runnerId?getP(e.runnerId):null;
           const verb=e.action==='score'?`scored from ${e.from}B`:e.action==='out'?`out at ${e.from}B`:`${e.from}B → ${e.from>=3?'home':(e.from+1)+'B'}`;
           return `<div class="gt-log-row"><span class="gt-log-tag pa">RUN</span> ${p?p.name:'(runner)'} ${verb}</div>`;
+        }
+        if(e.kind==='steal-safe'){
+          const p=e.runnerId?getP(e.runnerId):null;
+          const dest=e.from>=3?'home':(e.from+1)+'B';
+          return `<div class="gt-log-row"><span class="gt-log-tag pa">SB</span> ${p?p.name:'(runner)'} stole ${dest}</div>`;
+        }
+        if(e.kind==='steal-out'){
+          const p=e.runnerId?getP(e.runnerId):null;
+          return `<div class="gt-log-row"><span class="gt-log-tag out">CS</span> ${p?p.name:'(runner)'} caught stealing ${e.from+1>=4?'home':(e.from+1)+'B'}</div>`;
         }
         if(e.kind==='them-run') return `<div class="gt-log-row"><span class="gt-log-tag run">RUN</span> ${themName} scored</div>`;
         if(e.kind==='them-out') return `<div class="gt-log-row"><span class="gt-log-tag out">OUT</span> ${themName} out recorded</div>`;
