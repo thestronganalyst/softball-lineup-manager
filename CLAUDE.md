@@ -14,11 +14,11 @@ Reset to seeded defaults by clearing the `softball_v5` localStorage key in DevTo
 
 ## Architecture
 
-Everything client-side lives in `index.html`: CSS in `<style>`, markup, then a single `<script>` block (≈800 lines, starting around line 425) that owns all behavior. There are no modules, no framework, no bundler. The only backend is `functions/api/data.js`, a ~30-line Pages Function that proxies a single JSON file in R2.
+Everything client-side lives in `index.html`: CSS in `<style>`, markup, then a single `<script>` block (~1150 lines, starting around line 698) that owns all behavior. There are no modules, no framework, no bundler. The only backend is `functions/api/data.js`, a ~30-line Pages Function that proxies a single JSON file in R2.
 
 ### State model
 
-A single global `S` is the source of truth. Its shape is documented in `index.html` near the STATE comment block:
+A single global `S` (initialized around `index.html:735`) is the source of truth. Its shape is documented in `index.html` near the STATE comment block:
 
 ```
 S = { seasons:[{id,name}], teams:[{id,seasonId,name,roster,games}], activeSeasonId, activeTeamId }
@@ -30,9 +30,9 @@ game   = {id, name, date, opponent, location, presentPlayers, battingOrder, line
 
 ### Persistence — cloud + offline cache
 
-`persist()` and `loadStateCloud()`/`loadStateLocal()` (around `index.html:474-543`) implement a two-tier scheme:
+`persist()` and `loadStateCloud()`/`loadStateLocal()` (around `index.html:760-810`) implement a two-tier scheme:
 
-- **Authoritative store**: R2 object `data.json`, accessed via `GET /api/data` and `PUT /api/data` (the Pages Function in `functions/api/data.js`). The function does no auth itself — it relies on Cloudflare Access at the edge.
+- **Authoritative store**: R2 object `data.json`, accessed via `GET /api/data` and `PUT /api/data` — `POST` also writes (the Pages Function exposes both `onRequestPut` and `onRequestPost` as writers, e.g. for the `keepalive` unload PUT). The function does no auth itself — it relies on Cloudflare Access at the edge.
 - **Offline cache**: `localStorage[softball_v5]` is written synchronously on every `persist()` and read as fallback when the cloud is unreachable.
 - **Debounce**: `persist()` schedules a single PUT after `SAVE_DEBOUNCE_MS` (800ms) of idle. Rapid mutations (drag-drop, typing) collapse into one network write.
 - **Flush on unload**: `beforeunload` fires a `keepalive: true` PUT so an unflushed timer doesn't lose the last edit.
@@ -55,7 +55,7 @@ The core domain logic is the bench-consecutive rule and the auto-populate algori
 
 ### Pages and modals
 
-Two top-level pages, switched by `setPage()` toggling `.active` on `.page` elements: **Roster** (player CRUD with position-priority grid) and **Lineup** (per-game inning planner with drag-and-drop). Modals are absolute-positioned `.overlay` divs shown/hidden via inline `style.display`; `closeModals()` clears them and an outer click on the overlay also closes.
+Two top-level pages, switched by `setPage()` toggling `.active` on `.page` elements: **Roster** (player CRUD with position-priority grid) and **Lineup** (per-game inning planner with drag-and-drop). The Lineup page has a **By Position / By Player** view toggle (`setLineupView`, picking between `byPositionHTML` and `byPlayerHTML` around `index.html:1177-1217`): the by-position view is a positions×innings crosstab; the by-player view transposes to players×innings, with cells draggable to swap positions within an inning. Both views share the same drag-drop guards and validation. Modals are absolute-positioned `.overlay` divs shown/hidden via inline `style.display`; `closeModals()` clears them and an outer click on the overlay also closes.
 
 ### Auth (Cloudflare Access)
 
