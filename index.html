@@ -303,6 +303,22 @@ header{background:var(--navy);color:#fff;padding:0 18px;display:flex;align-items
 .gt-runner-base{display:inline-block;background:var(--navy);color:#fff;font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;margin-right:5px;letter-spacing:.4px}
 .gt-runner-empty{font-size:11px;color:var(--gd);font-style:italic;text-align:center;padding:2px 0}
 
+.gt-bs-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.gt-bs{border-collapse:collapse;width:100%;font-size:11px;min-width:360px}
+.gt-bs th,.gt-bs td{border:1px solid var(--gm);padding:4px 6px;text-align:center}
+.gt-bs thead th{background:var(--gl);font-weight:700;font-size:10px;color:var(--gd);text-transform:uppercase;letter-spacing:.4px}
+.gt-bs th.gt-bs-name{text-align:left;text-transform:none;color:var(--gd)}
+.gt-bs td.gt-bs-name{text-align:left;font-weight:600;white-space:nowrap;color:var(--tx)}
+.gt-bs-num{display:inline-block;color:var(--gd);font-size:9px;font-weight:700;margin-right:5px;min-width:14px;text-align:right}
+.gt-bs-cell{min-width:42px;font-weight:700;color:var(--tx)}
+.gt-bs-cell .pa{display:inline-block;padding:1px 4px;border-radius:3px;font-size:10px;margin:1px 1px;letter-spacing:.2px}
+.gt-bs-cell .pa.hit{background:#E8F5EC;color:#1E5C30}
+.gt-bs-cell .pa.walk{background:#EEF3FF;color:var(--bench2)}
+.gt-bs-cell .pa.hr{background:#FEF6D7;color:#7D4E00}
+.gt-bs-cell .pa.out{background:#FDECEA;color:#922B21}
+.gt-bs tbody tr.now td{background:#FFFBEB}
+.gt-bs-cur{display:inline-block;background:var(--gold);color:#1A202C;font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;margin-left:5px;letter-spacing:.3px}
+
 /* ════════════ ABOUT PAGE ════════════ */
 .about-page{flex:1;overflow-y:auto;background:#fff}
 .about-content{max-width:820px;margin:0 auto;padding:26px 32px 60px}
@@ -1194,13 +1210,14 @@ function ensureTracking(g){
 }
 
 function deriveTracking(g){
-  const init={inning:1,half:'us',outs:0,usScore:0,themScore:0,batterIdx:0,paCount:{b:0,s:0},bases:{1:null,2:null,3:null},currentBatterId:null,gameOver:false,events:0};
+  const init={inning:1,half:'us',outs:0,usScore:0,themScore:0,batterIdx:0,paCount:{b:0,s:0},bases:{1:null,2:null,3:null},currentBatterId:null,gameOver:false,events:0,paLog:[]};
   if(!g) return init;
   const evts=g.tracking?.events||[];
   const order=g.battingOrder||[];
   let inning=1, half='us', outs=0, usScore=0, themScore=0, batterIdx=0;
   let paCount={b:0,s:0};
   let bases={1:null,2:null,3:null};
+  const paLog=[];
   // Advance a runner from `from` by 1 base; if dest is occupied, cascade the
   // chain of consecutive occupied bases forward together (anyone going past
   // 3rd scores). Mutates `bases` and increments usScore.
@@ -1222,6 +1239,7 @@ function deriveTracking(g){
       else if(e.call==='S') paCount.s++;
       else if(e.call==='F'){ if(paCount.s<2) paCount.s++; }
     } else if(e.kind==='pa-end'){
+      paLog.push({batterId:e.batterId,inning,outcome:e.outcome,balls:paCount.b,strikes:paCount.s});
       if(TR_OUT_OUTCOMES.has(e.outcome)){
         outs++;
       } else if(e.outcome==='HR'){
@@ -1273,7 +1291,7 @@ function deriveTracking(g){
   }
   const gameOver=inning>MAX_INNING;
   const currentBatterId=order.length?order[batterIdx]:null;
-  return {inning,half,outs,usScore,themScore,batterIdx,paCount,bases,currentBatterId,gameOver,events:evts.length};
+  return {inning,half,outs,usScore,themScore,batterIdx,paCount,bases,currentBatterId,gameOver,events:evts.length,paLog};
 }
 
 function trAppend(...events){
@@ -1501,7 +1519,39 @@ function renderGameTracker(){
       }).join(''):'<div class="gt-log-row gt-log-empty">No events yet.</div>'}
     </div>`;
 
-  el.innerHTML=scoreboard+final+usPanel+themPanel+footer+log;
+  const order=g.battingOrder||[];
+  const boxScore=order.length?`
+    <div class="gt-card">
+      <div class="gt-card-lbl">Lineup line score</div>
+      <div class="gt-bs-wrap">
+        <table class="gt-bs">
+          <thead>
+            <tr>
+              <th class="gt-bs-name">Batter</th>
+              ${INNINGS.map(i=>`<th>${i}</th>`).join('')}
+            </tr>
+          </thead>
+          <tbody>
+            ${order.map((pid,idx)=>{
+              const p=getP(pid);
+              const isCur=!d.gameOver && d.half==='us' && pid===d.currentBatterId;
+              return `<tr class="${isCur?'now':''}">
+                <td class="gt-bs-name"><span class="gt-bs-num">${idx+1}</span>${p?p.name:'(removed)'}${isCur?'<span class="gt-bs-cur">AT BAT</span>':''}</td>
+                ${INNINGS.map(i=>{
+                  const pas=d.paLog.filter(pa=>pa.batterId===pid && pa.inning===i);
+                  return `<td class="gt-bs-cell">${pas.map(pa=>{
+                    const cls=TR_OUT_OUTCOMES.has(pa.outcome)?'out':pa.outcome==='BB'?'walk':pa.outcome==='HR'?'hr':'hit';
+                    return `<span class="pa ${cls}">${pa.outcome}</span>`;
+                  }).join('')}</td>`;
+                }).join('')}
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>`:'';
+
+  el.innerHTML=scoreboard+final+usPanel+themPanel+footer+log+boxScore;
 }
 
 // ══════════════════════════════════════════════════════
