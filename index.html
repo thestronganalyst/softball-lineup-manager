@@ -33,6 +33,8 @@ header{background:var(--navy);color:#fff;padding:0 18px;display:flex;align-items
 .ctx-sel option{color:var(--tx);background:#fff}
 .hdr-r{margin-left:auto;display:flex;gap:5px;align-items:center;padding-left:12px}
 .btn{padding:5px 12px;border-radius:5px;border:none;cursor:pointer;font-size:11px;font-weight:600;transition:.15s;white-space:nowrap}
+.btn:disabled,.btn[disabled]{opacity:.45;cursor:not-allowed;filter:grayscale(.4)}
+.btn:disabled:hover,.btn[disabled]:hover{filter:grayscale(.4)}
 .btn-gold{background:var(--gold);color:#1A202C}.btn-gold:hover{background:var(--gold2)}
 .btn-green{background:var(--green);color:#fff}.btn-green:hover{background:var(--green2)}
 .btn-navy{background:var(--navy2);color:#fff}.btn-navy:hover{background:var(--navy3)}
@@ -1222,28 +1224,21 @@ function deriveTracking(g){
     } else if(e.kind==='pa-end'){
       if(TR_OUT_OUTCOMES.has(e.outcome)){
         outs++;
-      } else if(e.outcome==='BB'){
-        // Forced-only: batter takes 1B, cascade through any consecutively-occupied bases.
+      } else if(e.outcome==='HR'){
+        // Home run: all runners and the batter score.
+        for(const b of [1,2,3]){ if(bases[b]){ usScore++; bases[b]=null; } }
+        usScore++;
+      } else {
+        // BB / 1B / 2B / 3B: place the batter at their destination and cascade
+        // only the runners they actually displace. Trailing runners who aren't
+        // forced stay put — the user advances them manually.
+        const dest={'BB':1,'1B':1,'2B':2,'3B':3}[e.outcome];
         let placing=e.batterId;
-        for(let b=1;b<=3 && placing;b++){
+        for(let b=dest;b<=3 && placing;b++){
           if(bases[b]){ const disp=bases[b]; bases[b]=placing; placing=disp; }
           else { bases[b]=placing; placing=null; }
         }
-        if(placing) usScore++; // bases were loaded — runner from 3rd scored
-      } else {
-        // 1B/2B/3B/HR: every runner (and the batter) advances by N bases.
-        const adv={'1B':1,'2B':2,'3B':3,'HR':4}[e.outcome];
-        const next={1:null,2:null,3:null};
-        for(const b of [1,2,3]){
-          if(bases[b]){
-            const dest=b+adv;
-            if(dest>=4) usScore++;
-            else next[dest]=bases[b];
-          }
-        }
-        if(adv>=4) usScore++; // batter scores on HR
-        else next[adv]=e.batterId;
-        bases=next;
+        if(placing) usScore++; // displaced runner scored from 3B
       }
       if(order.length) batterIdx=(batterIdx+1)%order.length;
       paCount={b:0,s:0};
@@ -1400,13 +1395,17 @@ function renderGameTracker(){
       ${[3,2,1].filter(b=>d.bases[b]).map(b=>{
         const p=getP(d.bases[b]);
         const advLbl=b===3?'→ Score':`→ ${b+1}B`;
+        const stealBlocked=b<3 && d.bases[b+1];
         return `<div class="gt-runner-row">
           <span class="gt-runner-from"><span class="gt-runner-base">${b}B</span> <strong>${p?p.name:'?'}</strong></span>
           <button class="btn btn-outline btn-xs" onclick="trRunner(${b},'advance')">${advLbl}</button>
           ${b<3?`<button class="btn btn-navy btn-xs" onclick="trRunner(${b},'score')">→ Home</button>`:''}
           <button class="btn btn-red btn-xs" onclick="trRunner(${b},'out')">Out</button>
-          <button class="btn btn-gold btn-xs" onclick="trSteal(${b},'safe')" title="Stolen base">🏃 SB</button>
-          <button class="btn btn-red btn-xs" onclick="trSteal(${b},'out')" title="Caught stealing">🏃 CS</button>
+          ${stealBlocked
+            ?`<button class="btn btn-gold btn-xs" disabled title="${b+1}B is occupied — can't steal">🏃 SB</button>
+              <button class="btn btn-red btn-xs" disabled title="${b+1}B is occupied — can't attempt a steal">🏃 CS</button>`
+            :`<button class="btn btn-gold btn-xs" onclick="trSteal(${b},'safe')" title="Stolen base">🏃 SB</button>
+              <button class="btn btn-red btn-xs" onclick="trSteal(${b},'out')" title="Caught stealing">🏃 CS</button>`}
         </div>`;
       }).join('')}
     </div>`:'';
