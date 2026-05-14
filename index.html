@@ -1297,8 +1297,14 @@ function clearSlot(posId,inn){
 }
 
 // ── drag/drop (inning-scoped) ──
-function dStart(e,pid,from,inn){drag={pid,from,inn};e.dataTransfer.effectAllowed='move';setTimeout(()=>e.target.classList.add('dragging'),0);}
-function dEnd(e){e.target.classList.remove('dragging');drag=null;}
+let dragPreViolationKeys=null;
+function dStart(e,pid,from,inn){
+  drag={pid,from,inn};
+  dragPreViolationKeys=ruleViolationKeys(activeGame());
+  e.dataTransfer.effectAllowed='move';
+  setTimeout(()=>e.target.classList.add('dragging'),0);
+}
+function dEnd(e){e.target.classList.remove('dragging');drag=null;dragPreViolationKeys=null;}
 function dOver(e,to,inn){
   e.preventDefault();
   if(drag&&drag.inn!==inn) return;
@@ -1307,9 +1313,65 @@ function dOver(e,to,inn){
     e.currentTarget.classList.add('drop-invalid');
     return;
   }
+  if(drag&&lineupView==='player'&&dropIntroducesError(drag,to,inn)){
+    e.currentTarget.classList.add('drop-invalid');
+    return;
+  }
   e.currentTarget.classList.add('drop-hover');
 }
 function dLeave(e){e.currentTarget.classList.remove('drop-hover');e.currentTarget.classList.remove('drop-invalid');}
+
+// Granular per-violation set so we can detect whether a candidate drop would
+// raise a new error (as opposed to just re-flagging one already present).
+function ruleViolationKeys(g){
+  const keys=new Set();
+  if(!g) return keys;
+  if(ruleOn('consecBench')){
+    INNINGS.forEach(inn=>{
+      BENCH_POS.forEach(b=>{
+        const pid=g.lineup[inn][b.id];
+        if(pid&&benchConsec(pid,inn,g)) keys.add(`consecBench:${pid}:${inn}`);
+      });
+    });
+  }
+  if(ruleOn('fairBench')){
+    const vals=Array.from(benchCounts(g).values());
+    if(vals.length){
+      const minB=Math.min(...vals),maxB=Math.max(...vals);
+      if(maxB-minB>1) keys.add('fairBench');
+    }
+  }
+  if(ruleOn('infieldByDeadline')){
+    const ifSet=new Set(),anywhereEarly=new Set();
+    INNINGS.forEach(inn=>{
+      if(inn>INFIELD_DEADLINE) return;
+      ALL_POS.forEach(pos=>{
+        const pid=g.lineup[inn][pos.id]; if(!pid) return;
+        anywhereEarly.add(pid);
+        if(INFIELD_PC.includes(pos.id)) ifSet.add(pid);
+      });
+    });
+    g.presentPlayers.forEach(pid=>{
+      if(anywhereEarly.has(pid)&&!ifSet.has(pid)) keys.add(`infieldByDeadline:${pid}`);
+    });
+  }
+  return keys;
+}
+
+function dropIntroducesError(drag,to,inn){
+  const g=activeGame(); if(!g) return false;
+  if(drag.from===to) return false;
+  const fakeLineup={};
+  Object.keys(g.lineup).forEach(k=>{fakeLineup[k]={...g.lineup[k]};});
+  const innState=fakeLineup[inn];
+  const occ=to!=='pool'?innState[to]:null;
+  if(to!=='pool') innState[to]=drag.pid;
+  if(drag.from!=='pool') innState[drag.from]=occ||null;
+  const postKeys=ruleViolationKeys({...g,lineup:fakeLineup});
+  const preKeys=dragPreViolationKeys||ruleViolationKeys(g);
+  for(const k of postKeys) if(!preKeys.has(k)) return true;
+  return false;
+}
 function dDrop(e,to,inn){
   e.preventDefault();e.currentTarget.classList.remove('drop-hover');e.currentTarget.classList.remove('drop-invalid');
   if(!drag) return;
@@ -1431,9 +1493,9 @@ function autoAll(){INNINGS.forEach(i=>autoInning(i));}
 // ══════════════════════════════════════════════════════
 // VALIDATION
 // ══════════════════════════════════════════════════════
-function benchConsec(pid,inn){
+function benchConsec(pid,inn,g){
   if(inn<=1) return false;
-  const g=activeGame();if(!g) return false;
+  g=g||activeGame();if(!g) return false;
   return BENCH_POS.some(b=>g.lineup[inn-1][b.id]===pid);
 }
 
