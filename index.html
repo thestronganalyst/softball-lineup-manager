@@ -240,6 +240,50 @@ header{background:var(--navy);color:#fff;padding:0 18px;display:flex;align-items
 .rule-desc{font-size:10px;color:var(--gd);margin-top:1px;line-height:1.35}
 .rule-detail{font-size:10px;color:var(--warn-tx);background:var(--warn-bg);border:1px solid var(--warn-bd);border-radius:4px;padding:3px 7px;margin-top:4px;line-height:1.35}
 
+/* ════════════════════════════════════════
+   GAME (TRACKING) PAGE
+════════════════════════════════════════ */
+.track-page{display:flex;flex:1;overflow:hidden}
+.track-main{flex:1;overflow-y:auto;padding:14px;background:#EEF2F7}
+.track-empty{padding:30px;font-size:13px;color:var(--gd);font-style:italic;text-align:center;background:#fff;border:1px dashed var(--gm);border-radius:7px}
+
+.gt-score{display:grid;grid-template-columns:1fr 1.2fr 1fr;align-items:stretch;background:#fff;border:1px solid var(--gm);border-radius:7px;padding:12px;margin-bottom:10px;gap:10px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.gt-team{text-align:center;display:flex;flex-direction:column;justify-content:center;gap:2px}
+.gt-tname{font-size:10px;font-weight:700;color:var(--gd);text-transform:uppercase;letter-spacing:.6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gt-tscore{font-size:38px;font-weight:700;color:var(--navy);line-height:1}
+.gt-vs{text-align:center;display:flex;flex-direction:column;justify-content:center;gap:3px;border-left:1px solid var(--gl);border-right:1px solid var(--gl)}
+.gt-inning{font-size:14px;font-weight:700;color:var(--tx)}
+.gt-half{font-size:11px;color:var(--gd);font-weight:600}
+.gt-half.us{color:var(--green2)}
+.gt-half.them{color:var(--bench2)}
+.gt-outs{font-size:11px;color:var(--txm);margin-top:2px}
+
+.gt-card{background:#fff;border:1px solid var(--gm);border-radius:7px;padding:11px;margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.gt-card-lbl{font-size:10px;font-weight:700;color:var(--gd);text-transform:uppercase;letter-spacing:.6px;margin-bottom:5px}
+.gt-batter-name{font-size:18px;font-weight:700;color:var(--navy)}
+.gt-batter-num{font-size:13px;color:var(--gd);font-weight:600;margin-left:4px}
+.gt-count{margin-top:4px;font-size:13px;color:var(--txm)}
+.gt-count strong{color:var(--tx);font-size:15px}
+.gt-batter-missing{font-size:11px;color:var(--gd);font-style:italic}
+
+.gt-btnrow{display:flex;flex-wrap:wrap;gap:6px}
+.gt-btnrow .btn{flex:0 0 auto;min-width:74px;padding:7px 10px;font-size:11px}
+.gt-btnrow .btn.wide{min-width:120px}
+
+.gt-footer{display:flex;gap:8px;margin-bottom:10px}
+
+.gt-log{background:#FAFBFC;border:1px solid var(--gm);border-radius:7px;padding:9px 11px}
+.gt-log-lbl{font-size:10px;font-weight:700;color:var(--gd);text-transform:uppercase;letter-spacing:.6px;margin-bottom:5px}
+.gt-log-row{font-size:11px;color:var(--txm);padding:3px 0;display:flex;align-items:center;gap:6px}
+.gt-log-tag{display:inline-block;background:var(--navy);color:#fff;font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;letter-spacing:.4px;flex-shrink:0}
+.gt-log-tag.pa{background:var(--green2)}
+.gt-log-tag.run{background:var(--bench2)}
+.gt-log-tag.out{background:var(--red)}
+.gt-log-tag.half{background:var(--gold2);color:#fff}
+.gt-log-empty{font-style:italic;color:var(--gd)}
+
+.gt-final{background:var(--ok-bg);border:1px solid var(--ok-bd);color:var(--ok-tx);padding:11px;border-radius:7px;margin-bottom:10px;font-weight:600;display:flex;align-items:center;justify-content:space-between;gap:10px}
+
 /* ════════════ ABOUT PAGE ════════════ */
 .about-page{flex:1;overflow-y:auto;background:#fff}
 .about-content{max-width:820px;margin:0 auto;padding:26px 32px 60px}
@@ -339,13 +383,14 @@ header{background:var(--navy);color:#fff;padding:0 18px;display:flex;align-items
   .rp-grid{padding:10px 10px}
   .rp-cards{grid-template-columns:1fr;gap:8px}
 
-  /* Lineup page stacks vertically; sidebar drops to the bottom */
-  .lineup-page{flex-direction:column;overflow:visible;height:auto}
+  /* Lineup + Game pages stack vertically; sidebar drops to the bottom */
+  .lineup-page,.track-page{flex-direction:column;overflow:visible;height:auto}
+  .track-main{padding:10px}
   .gsidebar{width:100%;order:2;border-right:none;border-top:2px solid var(--gm);overflow:visible}
   .gs-sec{flex:0 0 auto;max-height:260px;border-bottom:2px solid var(--gm)}
   .gs-sec:last-child{border-bottom:none}
 
-  .lmain{order:1;overflow:visible}
+  .lmain,.track-main{order:1;overflow:visible}
   .lm-top{padding:8px 10px 0}
   .ginfo-strip{flex-wrap:wrap;gap:6px}
   .gfield{flex:1;min-width:130px}
@@ -412,6 +457,7 @@ header{background:var(--navy);color:#fff;padding:0 18px;display:flex;align-items
 <div class="page-nav">
   <div class="pnav-tab active" data-page="roster" onclick="setPage('roster')">👥 Roster</div>
   <div class="pnav-tab" data-page="lineup" onclick="setPage('lineup')">📋 Lineup</div>
+  <div class="pnav-tab" data-page="game" onclick="setPage('game')">🎯 Game</div>
   <div class="pnav-tab" data-page="about" onclick="setPage('about')">📖 About</div>
   <div class="pnav-r">
     <button class="btn btn-ghost btn-sm" onclick="openSeasonModal()">⚙ Manage Seasons</button>
@@ -483,6 +529,22 @@ header{background:var(--navy);color:#fff;padding:0 18px;display:flex;align-items
         </div>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- ════════════ GAME (TRACKING) PAGE ════════════ -->
+<div class="page" id="page-game">
+  <div class="track-page">
+    <div class="gsidebar">
+      <div class="gs-sec">
+        <div class="gs-hdr">
+          <div class="gs-hdr-lbl">Games</div>
+          <button class="btn btn-green btn-xs" onclick="openNewGameModal()">+</button>
+        </div>
+        <div class="gs-body" id="gameListTrack"></div>
+      </div>
+    </div>
+    <div class="track-main" id="gameTrack"></div>
   </div>
 </div>
 
@@ -730,7 +792,16 @@ const SK='softball_v5';
 //   activeSeasonId, activeTeamId
 // }
 // player: {id, name, jersey, primaryPos, isSub, priorities:{posId:1|2|3}}
-// game:   {id, name, date, opponent, location, presentPlayers:[], battingOrder:[], lineup:{inn:{posId:pid|null}}}
+// game:   {id, name, date, opponent, location, presentPlayers:[], battingOrder:[], lineup:{inn:{posId:pid|null}},
+//          tracking?:{ events:[event] }}
+// event:  one of
+//   {kind:'pitch',  call:'B'|'S'|'F'}                          // a pitch during our half-inning
+//   {kind:'pa-end', batterId, outcome:'1B'|'2B'|'3B'|'HR'|'BB'|'K'|'GO'|'FO'}
+//   {kind:'them-run'}                                          // opponent scored
+//   {kind:'them-out'}                                          // opponent recorded out
+//   {kind:'half-end'}                                          // half-inning ended (advances inning when their-half ends)
+// Derived state (score, inning, half, outs, current batter, count) is computed by deriveTracking()
+// from the event log — events are the source of truth, nothing else needs persisting.
 // ══════════════════════════════════════════════════════
 let S={seasons:[],teams:[],activeSeasonId:null,activeTeamId:null};
 let currentPage='roster';
@@ -913,6 +984,7 @@ function renderAll(){
   renderBatOrder();
   renderLineup();
   renderVal();
+  renderGameTracker();
 }
 
 // ══════════════════════════════════════════════════════
@@ -1032,19 +1104,24 @@ function exportCSVRoster(){
 // ══════════════════════════════════════════════════════
 function renderGameList(){
   const games=activeGames();
-  document.getElementById('gameList').innerHTML=games.length===0
+  const html=games.length===0
     ?'<div style="padding:12px;font-size:11px;color:var(--gd);font-style:italic">No games yet. Create one →</div>'
     :games.map(g=>`
       <div class="gitem ${g.id===activeGameId?'active':''}" onclick="switchGame('${g.id}')">
         <div class="gi-name">${g.name}</div>
         <div class="gi-meta">${g.date||'No date'}${g.opponent?' · '+g.opponent:''}</div>
       </div>`).join('');
+  ['gameList','gameListTrack'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.innerHTML=html;
+  });
 }
 
 function switchGame(id){
   activeGameId=id;
   renderGameList(); renderGameInfo(); renderToolbar();
   renderLpRoster(); renderBatOrder(); renderLineup(); renderVal();
+  renderGameTracker();
 }
 
 // ══════════════════════════════════════════════════════
@@ -1076,6 +1153,203 @@ function deleteGame(){
   team.games=team.games.filter(g=>g.id!==activeGameId);
   activeGameId=team.games[0]?.id||null;
   persist(); renderAll();
+}
+
+// ══════════════════════════════════════════════════════
+// GAME TRACKING (SM-1)
+// Single source of truth is game.tracking.events; everything visible
+// is derived by walking that log in order.
+// ══════════════════════════════════════════════════════
+const TR_OUT_OUTCOMES=new Set(['K','GO','FO']);
+const TR_REACH_OUTCOMES=new Set(['1B','2B','3B','HR','BB']);
+const MAX_INNING=INNINGS[INNINGS.length-1];
+
+function ensureTracking(g){
+  if(!g.tracking) g.tracking={events:[]};
+  if(!Array.isArray(g.tracking.events)) g.tracking.events=[];
+  return g.tracking;
+}
+
+function deriveTracking(g){
+  const init={inning:1,half:'us',outs:0,usScore:0,themScore:0,batterIdx:0,paCount:{b:0,s:0},currentBatterId:null,gameOver:false,events:0};
+  if(!g) return init;
+  const evts=g.tracking?.events||[];
+  const order=g.battingOrder||[];
+  let {inning,half,outs,usScore,themScore,batterIdx}=init;
+  let paCount={b:0,s:0};
+  for(const e of evts){
+    if(e.kind==='pitch'){
+      if(half!=='us') continue;
+      if(e.call==='B') paCount.b++;
+      else if(e.call==='S') paCount.s++;
+      else if(e.call==='F'){ if(paCount.s<2) paCount.s++; }
+    } else if(e.kind==='pa-end'){
+      if(e.outcome==='HR') usScore++;
+      else if(TR_OUT_OUTCOMES.has(e.outcome)) outs++;
+      if(order.length) batterIdx=(batterIdx+1)%order.length;
+      paCount={b:0,s:0};
+    } else if(e.kind==='them-run'){
+      themScore++;
+    } else if(e.kind==='them-out'){
+      outs++;
+    } else if(e.kind==='half-end'){
+      outs=0;
+      paCount={b:0,s:0};
+      if(half==='us'){ half='them'; }
+      else { half='us'; inning++; }
+    }
+  }
+  const gameOver=inning>MAX_INNING;
+  const currentBatterId=order.length?order[batterIdx]:null;
+  return {inning,half,outs,usScore,themScore,batterIdx,paCount,currentBatterId,gameOver,events:evts.length};
+}
+
+function trAppend(...events){
+  const g=activeGame(); if(!g) return;
+  const t=ensureTracking(g);
+  events.forEach(e=>t.events.push(e));
+  persist(); renderGameTracker();
+}
+function trUndo(){
+  const g=activeGame(); if(!g) return;
+  const t=ensureTracking(g);
+  if(!t.events.length) return;
+  t.events.pop();
+  persist(); renderGameTracker();
+}
+function trPitch(call){
+  const g=activeGame(); if(!g) return;
+  const d=deriveTracking(g);
+  if(d.gameOver||d.half!=='us'||!d.currentBatterId) return;
+  let b=d.paCount.b, s=d.paCount.s;
+  if(call==='B') b++;
+  else if(call==='S') s++;
+  else if(call==='F' && s<2) s++;
+  const events=[{kind:'pitch',call}];
+  if(b>=4) events.push({kind:'pa-end',batterId:d.currentBatterId,outcome:'BB'});
+  else if(s>=3) events.push({kind:'pa-end',batterId:d.currentBatterId,outcome:'K'});
+  trAppend(...events);
+}
+function trOutcome(outcome){
+  const g=activeGame(); if(!g) return;
+  const d=deriveTracking(g);
+  if(d.gameOver||d.half!=='us'||!d.currentBatterId) return;
+  trAppend({kind:'pa-end',batterId:d.currentBatterId,outcome});
+}
+function trThemRun(){
+  const g=activeGame(); if(!g) return;
+  const d=deriveTracking(g);
+  if(d.gameOver||d.half!=='them') return;
+  trAppend({kind:'them-run'});
+}
+function trThemOut(){
+  const g=activeGame(); if(!g) return;
+  const d=deriveTracking(g);
+  if(d.gameOver||d.half!=='them') return;
+  trAppend({kind:'them-out'});
+}
+function trEndHalf(){
+  const g=activeGame(); if(!g) return;
+  const d=deriveTracking(g);
+  if(d.gameOver) return;
+  trAppend({kind:'half-end'});
+}
+
+function renderGameTracker(){
+  const el=document.getElementById('gameTrack');
+  if(!el) return;
+  const g=activeGame();
+  if(!g){ el.innerHTML='<div class="track-empty">Select a game from the left to start tracking.</div>'; return; }
+  const d=deriveTracking(g);
+  const batter=d.currentBatterId?getP(d.currentBatterId):null;
+  const halfLbl=d.half==='us'?'Us batting':'Opponent batting';
+  const inningDisp=Math.min(d.inning,MAX_INNING);
+
+  const usName='Us';
+  const themName=g.opponent?g.opponent:'Opponent';
+
+  const scoreboard=`
+    <div class="gt-score">
+      <div class="gt-team"><div class="gt-tname">${usName}</div><div class="gt-tscore">${d.usScore}</div></div>
+      <div class="gt-vs">
+        <div class="gt-inning">Inning ${inningDisp}${d.gameOver?' · FINAL':''}</div>
+        <div class="gt-half ${d.half}">${d.gameOver?'Game over':halfLbl}</div>
+        <div class="gt-outs">Outs: ${d.outs}</div>
+      </div>
+      <div class="gt-team"><div class="gt-tname">${themName}</div><div class="gt-tscore">${d.themScore}</div></div>
+    </div>`;
+
+  const final=d.gameOver?`
+    <div class="gt-final"><span>Game complete after ${MAX_INNING} innings.</span>
+      <button class="btn btn-outline btn-sm" onclick="trUndo()" ${d.events?'':'disabled'}>↶ Undo last event</button>
+    </div>`:'';
+
+  const usPanel=(!d.gameOver && d.half==='us')?`
+    <div class="gt-card">
+      <div class="gt-card-lbl">At bat</div>
+      ${batter
+        ?`<div class="gt-batter-name">${batter.name}${batter.jersey?`<span class="gt-batter-num">#${batter.jersey}</span>`:''}</div>
+          <div class="gt-count">Count: <strong>${d.paCount.b}-${d.paCount.s}</strong></div>`
+        :`<div class="gt-batter-missing">No batting order set on this game. Open the Lineup page to set one.</div>`}
+    </div>
+    <div class="gt-card">
+      <div class="gt-card-lbl">Pitch</div>
+      <div class="gt-btnrow">
+        <button class="btn btn-outline" onclick="trPitch('B')" ${batter?'':'disabled'}>Ball</button>
+        <button class="btn btn-outline" onclick="trPitch('S')" ${batter?'':'disabled'}>Strike</button>
+        <button class="btn btn-outline" onclick="trPitch('F')" ${batter?'':'disabled'}>Foul</button>
+      </div>
+    </div>
+    <div class="gt-card">
+      <div class="gt-card-lbl">Outcome</div>
+      <div class="gt-btnrow">
+        <button class="btn btn-green" onclick="trOutcome('1B')" ${batter?'':'disabled'}>1B</button>
+        <button class="btn btn-green" onclick="trOutcome('2B')" ${batter?'':'disabled'}>2B</button>
+        <button class="btn btn-green" onclick="trOutcome('3B')" ${batter?'':'disabled'}>3B</button>
+        <button class="btn btn-gold" onclick="trOutcome('HR')" ${batter?'':'disabled'}>HR</button>
+        <button class="btn btn-navy" onclick="trOutcome('BB')" ${batter?'':'disabled'}>BB</button>
+        <button class="btn btn-red" onclick="trOutcome('K')" ${batter?'':'disabled'}>K</button>
+        <button class="btn btn-red" onclick="trOutcome('GO')" ${batter?'':'disabled'}>Ground Out</button>
+        <button class="btn btn-red" onclick="trOutcome('FO')" ${batter?'':'disabled'}>Fly Out</button>
+      </div>
+    </div>`:'';
+
+  const themPanel=(!d.gameOver && d.half==='them')?`
+    <div class="gt-card">
+      <div class="gt-card-lbl">${themName} at bat</div>
+      <div class="gt-btnrow">
+        <button class="btn btn-navy wide" onclick="trThemRun()">+1 Run</button>
+        <button class="btn btn-outline wide" onclick="trThemOut()">+1 Out</button>
+      </div>
+    </div>`:'';
+
+  const footer=!d.gameOver?`
+    <div class="gt-footer">
+      <button class="btn btn-navy btn-sm" onclick="trEndHalf()">End ${d.half==='us'?'our':'their'} half-inning</button>
+      <button class="btn btn-outline btn-sm" onclick="trUndo()" ${d.events?'':'disabled'}>↶ Undo last event</button>
+    </div>`:'';
+
+  const events=(g.tracking?.events||[]).slice(-8).reverse();
+  const log=`
+    <div class="gt-log">
+      <div class="gt-log-lbl">Recent events</div>
+      ${events.length?events.map(e=>{
+        if(e.kind==='pitch'){
+          const t={B:'Ball',S:'Strike',F:'Foul'}[e.call]||e.call;
+          return `<div class="gt-log-row"><span class="gt-log-tag">PITCH</span> ${t}</div>`;
+        }
+        if(e.kind==='pa-end'){
+          const p=e.batterId?getP(e.batterId):null;
+          return `<div class="gt-log-row"><span class="gt-log-tag pa">PA</span> ${p?p.name:'(batter)'} → ${e.outcome}</div>`;
+        }
+        if(e.kind==='them-run') return `<div class="gt-log-row"><span class="gt-log-tag run">RUN</span> ${themName} scored</div>`;
+        if(e.kind==='them-out') return `<div class="gt-log-row"><span class="gt-log-tag out">OUT</span> ${themName} out recorded</div>`;
+        if(e.kind==='half-end') return `<div class="gt-log-row"><span class="gt-log-tag half">HALF</span> Half-inning ended</div>`;
+        return '';
+      }).join(''):'<div class="gt-log-row gt-log-empty">No events yet.</div>'}
+    </div>`;
+
+  el.innerHTML=scoreboard+final+usPanel+themPanel+footer+log;
 }
 
 // ══════════════════════════════════════════════════════
