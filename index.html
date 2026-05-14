@@ -284,6 +284,23 @@ header{background:var(--navy);color:#fff;padding:0 18px;display:flex;align-items
 
 .gt-final{background:var(--ok-bg);border:1px solid var(--ok-bd);color:var(--ok-tx);padding:11px;border-radius:7px;margin-bottom:10px;font-weight:600;display:flex;align-items:center;justify-content:space-between;gap:10px}
 
+.gt-diamond{width:200px;height:170px;display:grid;grid-template-columns:1fr 1fr 1fr;grid-template-rows:1fr 1fr auto;gap:5px;margin:8px auto 10px;position:relative}
+.gtd-base{border:1px solid var(--gm);border-radius:6px;padding:5px 4px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#fff;min-width:0;overflow:hidden}
+.gtd-base.occ{background:#E8F5EC;border-color:#A9DFBF}
+.gtd-base.gtd-2{grid-column:2;grid-row:1}
+.gtd-base.gtd-3{grid-column:1;grid-row:2}
+.gtd-base.gtd-1{grid-column:3;grid-row:2}
+.gtd-home{grid-column:2;grid-row:3;text-align:center;font-size:22px;color:var(--gd);align-self:end;line-height:1}
+.gtd-bn{font-size:9px;font-weight:700;color:var(--gd);letter-spacing:.4px;text-transform:uppercase}
+.gtd-pn{font-size:11px;font-weight:700;color:var(--green2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.gtd-pnum{font-size:9px;color:var(--gd);margin-left:3px;font-weight:600}
+.gtd-empty{font-size:11px;color:var(--gd);margin-top:2px}
+.gt-runner-actions{display:flex;flex-direction:column;gap:5px;margin-top:4px}
+.gt-runner-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:5px 8px;background:var(--gl);border-radius:5px}
+.gt-runner-from{flex:1;font-size:11px;color:var(--tx);min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gt-runner-base{display:inline-block;background:var(--navy);color:#fff;font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;margin-right:5px;letter-spacing:.4px}
+.gt-runner-empty{font-size:11px;color:var(--gd);font-style:italic;text-align:center;padding:2px 0}
+
 /* ════════════ ABOUT PAGE ════════════ */
 .about-page{flex:1;overflow-y:auto;background:#fff}
 .about-content{max-width:820px;margin:0 auto;padding:26px 32px 60px}
@@ -1171,12 +1188,27 @@ function ensureTracking(g){
 }
 
 function deriveTracking(g){
-  const init={inning:1,half:'us',outs:0,usScore:0,themScore:0,batterIdx:0,paCount:{b:0,s:0},currentBatterId:null,gameOver:false,events:0};
+  const init={inning:1,half:'us',outs:0,usScore:0,themScore:0,batterIdx:0,paCount:{b:0,s:0},bases:{1:null,2:null,3:null},currentBatterId:null,gameOver:false,events:0};
   if(!g) return init;
   const evts=g.tracking?.events||[];
   const order=g.battingOrder||[];
-  let {inning,half,outs,usScore,themScore,batterIdx}=init;
+  let inning=1, half='us', outs=0, usScore=0, themScore=0, batterIdx=0;
   let paCount={b:0,s:0};
+  let bases={1:null,2:null,3:null};
+  // Advance a runner from `from` by 1 base; if dest is occupied, cascade the
+  // chain of consecutive occupied bases forward together (anyone going past
+  // 3rd scores). Mutates `bases` and increments usScore.
+  const cascadeAdvance=(from)=>{
+    if(!bases[from]) return;
+    const chain=[];
+    let cur=from;
+    while(cur<=3 && bases[cur]){ chain.push(cur); cur++; }
+    for(let i=chain.length-1;i>=0;i--){
+      const b=chain[i], next=b+1;
+      if(next>=4){ usScore++; bases[b]=null; }
+      else { bases[next]=bases[b]; bases[b]=null; }
+    }
+  };
   for(const e of evts){
     if(e.kind==='pitch'){
       if(half!=='us') continue;
@@ -1184,10 +1216,39 @@ function deriveTracking(g){
       else if(e.call==='S') paCount.s++;
       else if(e.call==='F'){ if(paCount.s<2) paCount.s++; }
     } else if(e.kind==='pa-end'){
-      if(e.outcome==='HR') usScore++;
-      else if(TR_OUT_OUTCOMES.has(e.outcome)) outs++;
+      if(TR_OUT_OUTCOMES.has(e.outcome)){
+        outs++;
+      } else if(e.outcome==='BB'){
+        // Forced-only: batter takes 1B, cascade through any consecutively-occupied bases.
+        let placing=e.batterId;
+        for(let b=1;b<=3 && placing;b++){
+          if(bases[b]){ const disp=bases[b]; bases[b]=placing; placing=disp; }
+          else { bases[b]=placing; placing=null; }
+        }
+        if(placing) usScore++; // bases were loaded — runner from 3rd scored
+      } else {
+        // 1B/2B/3B/HR: every runner (and the batter) advances by N bases.
+        const adv={'1B':1,'2B':2,'3B':3,'HR':4}[e.outcome];
+        const next={1:null,2:null,3:null};
+        for(const b of [1,2,3]){
+          if(bases[b]){
+            const dest=b+adv;
+            if(dest>=4) usScore++;
+            else next[dest]=bases[b];
+          }
+        }
+        if(adv>=4) usScore++; // batter scores on HR
+        else next[adv]=e.batterId;
+        bases=next;
+      }
       if(order.length) batterIdx=(batterIdx+1)%order.length;
       paCount={b:0,s:0};
+    } else if(e.kind==='runner-move'){
+      const from=e.from;
+      if(!bases[from]) continue;
+      if(e.action==='score'){ usScore++; bases[from]=null; }
+      else if(e.action==='out'){ outs++; bases[from]=null; }
+      else if(e.action==='advance'){ cascadeAdvance(from); }
     } else if(e.kind==='them-run'){
       themScore++;
     } else if(e.kind==='them-out'){
@@ -1195,13 +1256,14 @@ function deriveTracking(g){
     } else if(e.kind==='half-end'){
       outs=0;
       paCount={b:0,s:0};
+      bases={1:null,2:null,3:null};
       if(half==='us'){ half='them'; }
       else { half='us'; inning++; }
     }
   }
   const gameOver=inning>MAX_INNING;
   const currentBatterId=order.length?order[batterIdx]:null;
-  return {inning,half,outs,usScore,themScore,batterIdx,paCount,currentBatterId,gameOver,events:evts.length};
+  return {inning,half,outs,usScore,themScore,batterIdx,paCount,bases,currentBatterId,gameOver,events:evts.length};
 }
 
 function trAppend(...events){
@@ -1254,6 +1316,14 @@ function trEndHalf(){
   if(d.gameOver) return;
   trAppend({kind:'half-end'});
 }
+function trRunner(from,action){
+  const g=activeGame(); if(!g) return;
+  const d=deriveTracking(g);
+  if(d.gameOver||d.half!=='us') return;
+  const runnerId=d.bases[from];
+  if(!runnerId) return;
+  trAppend({kind:'runner-move',from,action,runnerId});
+}
 
 function renderGameTracker(){
   const el=document.getElementById('gameTrack');
@@ -1284,6 +1354,40 @@ function renderGameTracker(){
       <button class="btn btn-outline btn-sm" onclick="trUndo()" ${d.events?'':'disabled'}>↶ Undo last event</button>
     </div>`:'';
 
+  const baseChip=(b)=>{
+    const pid=d.bases[b];
+    const p=pid?getP(pid):null;
+    return `<div class="gtd-base gtd-${b} ${pid?'occ':''}">
+      <div class="gtd-bn">${b}B</div>
+      ${p?`<div class="gtd-pn">${p.name}${p.jersey?`<span class="gtd-pnum">#${p.jersey}</span>`:''}</div>`:'<div class="gtd-empty">—</div>'}
+    </div>`;
+  };
+  const anyRunner=d.bases[1]||d.bases[2]||d.bases[3];
+  const runnerActions=anyRunner?`
+    <div class="gt-runner-actions">
+      ${[3,2,1].filter(b=>d.bases[b]).map(b=>{
+        const p=getP(d.bases[b]);
+        const advLbl=b===3?'→ Score':`→ ${b+1}B`;
+        return `<div class="gt-runner-row">
+          <span class="gt-runner-from"><span class="gt-runner-base">${b}B</span> <strong>${p?p.name:'?'}</strong></span>
+          <button class="btn btn-outline btn-xs" onclick="trRunner(${b},'advance')">${advLbl}</button>
+          ${b<3?`<button class="btn btn-navy btn-xs" onclick="trRunner(${b},'score')">→ Home</button>`:''}
+          <button class="btn btn-red btn-xs" onclick="trRunner(${b},'out')">Out</button>
+        </div>`;
+      }).join('')}
+    </div>`:'';
+  const runnersCard=(!d.gameOver && d.half==='us')?`
+    <div class="gt-card">
+      <div class="gt-card-lbl">Runners</div>
+      <div class="gt-diamond">
+        ${baseChip(2)}
+        ${baseChip(3)}
+        ${baseChip(1)}
+        <div class="gtd-home">⌂</div>
+      </div>
+      ${runnerActions||'<div class="gt-runner-empty">Bases empty.</div>'}
+    </div>`:'';
+
   const usPanel=(!d.gameOver && d.half==='us')?`
     <div class="gt-card">
       <div class="gt-card-lbl">At bat</div>
@@ -1292,6 +1396,7 @@ function renderGameTracker(){
           <div class="gt-count">Count: <strong>${d.paCount.b}-${d.paCount.s}</strong></div>`
         :`<div class="gt-batter-missing">No batting order set on this game. Open the Lineup page to set one.</div>`}
     </div>
+    ${runnersCard}
     <div class="gt-card">
       <div class="gt-card-lbl">Pitch</div>
       <div class="gt-btnrow">
@@ -1341,6 +1446,11 @@ function renderGameTracker(){
         if(e.kind==='pa-end'){
           const p=e.batterId?getP(e.batterId):null;
           return `<div class="gt-log-row"><span class="gt-log-tag pa">PA</span> ${p?p.name:'(batter)'} → ${e.outcome}</div>`;
+        }
+        if(e.kind==='runner-move'){
+          const p=e.runnerId?getP(e.runnerId):null;
+          const verb=e.action==='score'?`scored from ${e.from}B`:e.action==='out'?`out at ${e.from}B`:`${e.from}B → ${e.from>=3?'home':(e.from+1)+'B'}`;
+          return `<div class="gt-log-row"><span class="gt-log-tag pa">RUN</span> ${p?p.name:'(runner)'} ${verb}</div>`;
         }
         if(e.kind==='them-run') return `<div class="gt-log-row"><span class="gt-log-tag run">RUN</span> ${themName} scored</div>`;
         if(e.kind==='them-out') return `<div class="gt-log-row"><span class="gt-log-tag out">OUT</span> ${themName} out recorded</div>`;
