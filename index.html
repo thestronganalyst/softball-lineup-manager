@@ -310,8 +310,11 @@ header{background:var(--navy);color:#fff;padding:0 18px;display:flex;align-items
 .gt-bs th.gt-bs-name{text-align:left;text-transform:none;color:var(--gd)}
 .gt-bs td.gt-bs-name{text-align:left;font-weight:600;white-space:nowrap;color:var(--tx)}
 .gt-bs-num{display:inline-block;color:var(--gd);font-size:9px;font-weight:700;margin-right:5px;min-width:14px;text-align:right}
-.gt-bs-cell{min-width:42px;font-weight:700;color:var(--tx)}
-.gt-bs-cell .pa{display:inline-block;padding:1px 4px;border-radius:3px;font-size:10px;margin:1px 1px;letter-spacing:.2px}
+.gt-bs-cell{min-width:54px;font-weight:700;color:var(--tx);padding:3px 4px;vertical-align:top}
+.gt-bs-pa{display:flex;flex-direction:column;align-items:center;gap:1px;padding:2px 0}
+.gt-bs-pa + .gt-bs-pa{border-top:1px dashed var(--gl);margin-top:2px;padding-top:3px}
+.gt-bs-note{font-size:9px;color:var(--gd);font-weight:600;line-height:1.2}
+.gt-bs-cell .pa{display:inline-block;padding:1px 5px;border-radius:3px;font-size:10px;letter-spacing:.2px}
 .gt-bs-cell .pa.hit{background:#E8F5EC;color:#1E5C30}
 .gt-bs-cell .pa.walk{background:#EEF3FF;color:var(--bench2)}
 .gt-bs-cell .pa.hr{background:#FEF6D7;color:#7D4E00}
@@ -1217,21 +1220,17 @@ function deriveTracking(g){
   let inning=1, half='us', outs=0, usScore=0, themScore=0, batterIdx=0;
   let paCount={b:0,s:0};
   let bases={1:null,2:null,3:null};
+  // runnerPa[b] = paLog index for the player currently on base b — lets us
+  // mark scored/stranded back onto the originating PA.
+  let runnerPa={1:null,2:null,3:null};
   const paLog=[];
-  // Advance a runner from `from` by 1 base; if dest is occupied, cascade the
-  // chain of consecutive occupied bases forward together (anyone going past
-  // 3rd scores). Mutates `bases` and increments usScore.
-  const cascadeAdvance=(from)=>{
-    if(!bases[from]) return;
-    const chain=[];
-    let cur=from;
-    while(cur<=3 && bases[cur]){ chain.push(cur); cur++; }
-    for(let i=chain.length-1;i>=0;i--){
-      const b=chain[i], next=b+1;
-      if(next>=4){ usScore++; bases[b]=null; }
-      else { bases[next]=bases[b]; bases[b]=null; }
-    }
+  const scoreFromBase=(b)=>{
+    usScore++;
+    const idx=runnerPa[b];
+    if(idx!=null) paLog[idx].scored=true;
+    bases[b]=null; runnerPa[b]=null;
   };
+  const clearBase=(b)=>{ bases[b]=null; runnerPa[b]=null; };
   for(const e of evts){
     if(e.kind==='pitch'){
       if(half!=='us') continue;
@@ -1239,52 +1238,82 @@ function deriveTracking(g){
       else if(e.call==='S') paCount.s++;
       else if(e.call==='F'){ if(paCount.s<2) paCount.s++; }
     } else if(e.kind==='pa-end'){
-      paLog.push({batterId:e.batterId,inning,outcome:e.outcome,balls:paCount.b,strikes:paCount.s});
+      const startScore=usScore;
+      const idx=paLog.length;
+      paLog.push({batterId:e.batterId,inning,outcome:e.outcome,balls:paCount.b,strikes:paCount.s,rbi:0,endBase:null,scored:false,strandedBase:null});
       if(TR_OUT_OUTCOMES.has(e.outcome)){
         outs++;
+        paLog[idx].endBase='out';
       } else if(e.outcome==='HR'){
-        // Home run: all runners and the batter score.
-        for(const b of [1,2,3]){ if(bases[b]){ usScore++; bases[b]=null; } }
+        for(const b of [1,2,3]){ if(bases[b]) scoreFromBase(b); }
         usScore++;
+        paLog[idx].scored=true;
+        paLog[idx].endBase='scored';
       } else {
-        // BB / 1B / 2B / 3B: place the batter at their destination and cascade
-        // only the runners they actually displace. Trailing runners who aren't
-        // forced stay put — the user advances them manually.
+        // BB / 1B / 2B / 3B: cascade-force only.
         const dest={'BB':1,'1B':1,'2B':2,'3B':3}[e.outcome];
-        let placing=e.batterId;
+        let placing=e.batterId, placingIdx=idx;
         for(let b=dest;b<=3 && placing;b++){
-          if(bases[b]){ const disp=bases[b]; bases[b]=placing; placing=disp; }
-          else { bases[b]=placing; placing=null; }
+          if(bases[b]){
+            const disp=bases[b], dispIdx=runnerPa[b];
+            bases[b]=placing; runnerPa[b]=placingIdx;
+            placing=disp; placingIdx=dispIdx;
+          } else {
+            bases[b]=placing; runnerPa[b]=placingIdx;
+            placing=null; placingIdx=null;
+          }
         }
-        if(placing) usScore++; // displaced runner scored from 3B
+        if(placing){
+          // Displaced runner went past 3rd → home.
+          usScore++;
+          if(placingIdx!=null) paLog[placingIdx].scored=true;
+          paLog[idx].endBase=(placingIdx===idx)?'scored':paLog[idx].endBase;
+        }
+        if(paLog[idx].endBase==null){
+          for(const bb of [1,2,3]){ if(bases[bb]===e.batterId){ paLog[idx].endBase=bb; break; } }
+        }
       }
+      paLog[idx].rbi=TR_OUT_OUTCOMES.has(e.outcome)?0:(usScore-startScore);
       if(order.length) batterIdx=(batterIdx+1)%order.length;
       paCount={b:0,s:0};
     } else if(e.kind==='runner-move'){
       const from=e.from;
       if(!bases[from]) continue;
-      if(e.action==='score'){ usScore++; bases[from]=null; }
-      else if(e.action==='out'){ outs++; bases[from]=null; }
-      else if(e.action==='advance'){ cascadeAdvance(from); }
+      if(e.action==='score'){ scoreFromBase(from); }
+      else if(e.action==='out'){ outs++; clearBase(from); }
+      else if(e.action==='advance'){
+        const chain=[]; let cur=from;
+        while(cur<=3 && bases[cur]){ chain.push(cur); cur++; }
+        for(let i=chain.length-1;i>=0;i--){
+          const b=chain[i], next=b+1;
+          if(next>=4){ scoreFromBase(b); }
+          else { bases[next]=bases[b]; runnerPa[next]=runnerPa[b]; clearBase(b); }
+        }
+      }
     } else if(e.kind==='steal-safe'){
       const from=e.from;
       if(!bases[from]) continue;
       const dest=from+1;
-      if(dest>=4){ usScore++; bases[from]=null; }
-      else if(!bases[dest]){ bases[dest]=bases[from]; bases[from]=null; }
+      if(dest>=4){ scoreFromBase(from); }
+      else if(!bases[dest]){ bases[dest]=bases[from]; runnerPa[dest]=runnerPa[from]; clearBase(from); }
     } else if(e.kind==='steal-out'){
       const from=e.from;
       if(!bases[from]) continue;
-      outs++;
-      bases[from]=null;
+      outs++; clearBase(from);
     } else if(e.kind==='them-run'){
       themScore++;
     } else if(e.kind==='them-out'){
       outs++;
     } else if(e.kind==='half-end'){
+      // Mark stranded runners back onto their PA entries.
+      for(const b of [1,2,3]){
+        const idx=runnerPa[b];
+        if(idx!=null) paLog[idx].strandedBase=b;
+      }
       outs=0;
       paCount={b:0,s:0};
       bases={1:null,2:null,3:null};
+      runnerPa={1:null,2:null,3:null};
       if(half==='us'){ half='them'; }
       else { half='us'; inning++; }
     }
@@ -1541,7 +1570,17 @@ function renderGameTracker(){
                   const pas=d.paLog.filter(pa=>pa.batterId===pid && pa.inning===i);
                   return `<td class="gt-bs-cell">${pas.map(pa=>{
                     const cls=TR_OUT_OUTCOMES.has(pa.outcome)?'out':pa.outcome==='BB'?'walk':pa.outcome==='HR'?'hr':'hit';
-                    return `<span class="pa ${cls}">${pa.outcome}</span>`;
+                    const notes=[];
+                    if((pa.balls|0)+(pa.strikes|0)>0){
+                      notes.push(`${Math.min(pa.balls|0,3)}-${Math.min(pa.strikes|0,2)}`);
+                    }
+                    if(pa.rbi>0) notes.push(`${pa.rbi} RBI`);
+                    if(pa.scored && pa.outcome!=='HR') notes.push('R');
+                    else if(pa.strandedBase) notes.push(`LOB ${pa.strandedBase}B`);
+                    return `<div class="gt-bs-pa">
+                      <span class="pa ${cls}">${pa.outcome}</span>
+                      ${notes.length?`<span class="gt-bs-note">${notes.join(' · ')}</span>`:''}
+                    </div>`;
                   }).join('')}</td>`;
                 }).join('')}
               </tr>`;
